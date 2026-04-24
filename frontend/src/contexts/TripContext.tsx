@@ -3,7 +3,11 @@ import { tripApi } from '../api/trip';
 
 interface TripContextType {
   tripId: string | null;
+  setTripId: (id: string | null) => void;
+  selectedMemberIds: string[];
+  setSelectedMemberIds: (ids: string[]) => void;
   tripData: any;
+  setTripData: (data: any) => void;
   loading: boolean;
   error: string | null;
   refreshTrip: () => Promise<void>;
@@ -12,10 +16,29 @@ interface TripContextType {
 const TripContext = createContext<TripContextType | undefined>(undefined);
 
 export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [tripId, setTripId] = useState<string | null>(localStorage.getItem('tripId'));
+  const [tripId, setTripIdState] = useState<string | null>(localStorage.getItem('tripId'));
+  const [selectedMemberIds, setSelectedMemberIdsState] = useState<string[]>(() => {
+    const saved = localStorage.getItem('selectedMemberIds');
+    return saved ? JSON.parse(saved) : ['A', 'B', 'C', 'D'];
+  });
   const [tripData, setTripData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const setTripId = (id: string | null) => {
+    setTripIdState(id);
+    if (id) {
+      localStorage.setItem('tripId', id);
+    } else {
+      localStorage.removeItem('tripId');
+      setTripData(null);
+    }
+  };
+
+  const setSelectedMemberIds = (ids: string[]) => {
+    setSelectedMemberIdsState(ids);
+    localStorage.setItem('selectedMemberIds', JSON.stringify(ids));
+  };
 
   const fetchTripData = async (id: string) => {
     setLoading(true);
@@ -23,52 +46,22 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await tripApi.getTrip(id);
       setTripData(data);
       setError(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch trip data:', err);
-      setError('获取旅行数据失败');
+      if (err.response?.status === 404) {
+        setTripId(null);
+        setError('当前旅行任务已失效，请重新创建');
+      } else {
+        setError('获取旅行数据失败');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const initTrip = async () => {
-    setLoading(true);
-    try {
-      // 始终尝试获取当前 tripId 的数据，如果 404 则重新创建
-      let currentId = tripId;
-      let data = null;
-      
-      if (currentId) {
-        try {
-          data = await tripApi.getTrip(currentId);
-        } catch (err: any) {
-          if (err.response?.status === 404) {
-            currentId = null; // 后端重启导致 ID 失效
-          } else {
-            throw err;
-          }
-        }
-      }
-
-      if (!currentId) {
-        const { trip_id } = await tripApi.createTrip({
-          title: "意大利与法国浪漫之旅",
-          days: 7,
-          budget_total: 40000
-        });
-        currentId = trip_id;
-        setTripId(trip_id);
-        localStorage.setItem('tripId', trip_id);
-        data = await tripApi.getTrip(trip_id);
-      }
-      
-      setTripData(data);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to initialize trip:', err);
-      setError('初始化旅行任务失败');
-    } finally {
-      setLoading(false);
+    if (tripId) {
+      await fetchTripData(tripId);
     }
   };
 
@@ -83,7 +76,17 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <TripContext.Provider value={{ tripId, tripData, loading, error, refreshTrip }}>
+    <TripContext.Provider value={{ 
+      tripId, 
+      setTripId, 
+      selectedMemberIds, 
+      setSelectedMemberIds, 
+      tripData, 
+      setTripData,
+      loading, 
+      error, 
+      refreshTrip 
+    }}>
       {children}
     </TripContext.Provider>
   );

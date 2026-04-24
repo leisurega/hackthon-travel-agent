@@ -1,9 +1,26 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { HeatmapChart } from '../components/Charts';
 import { useTrip } from '../contexts/TripContext';
 
 const Conflicts: React.FC = () => {
-  const { tripData } = useTrip();
+  const { tripData, selectedMemberIds } = useTrip();
+
+  const idToName: Record<string, string> = Object.fromEntries(
+    (tripData?.profiles || []).map((p: any) => [p.user_id, p.display_name])
+  );
+
+  const replaceUserIds = (text: string) => {
+    if (!text) return text;
+    let out = text;
+    Object.entries(idToName).forEach(([id, name]) => {
+      // 替换 "A 用户" 这种格式
+      out = out.replace(new RegExp(`${id}\\s*用户`, 'g'), name);
+      // 替换独立的 "A"（前后非字母数字，或者在字符串首尾）
+      out = out.replace(new RegExp(`(?<![a-zA-Z0-9])${id}(?![a-zA-Z0-9])`, 'g'), name);
+    });
+    return out;
+  };
 
   const stats = [
     { label: '总冲突数', value: tripData?.conflict_summary?.total || 12, color: 'blue' },
@@ -12,9 +29,12 @@ const Conflicts: React.FC = () => {
     { label: '初始可行性', value: (tripData?.conflict_summary?.feasibility || 71) + '%', color: 'green' }
   ];
 
-  const xAxis = ['A', 'B', 'C', 'D'];
+  // 动态 X 轴：仅显示选中的成员
+  const xAxis = selectedMemberIds.map(id => idToName[id] || id);
   const yAxis = ['预算', '时间', '节奏', '兴趣', '饮食', '社交'];
-  const heatmapData = tripData?.heatmap || [
+
+  // 动态 Heatmap 数据：根据选中的成员 ID 过滤列
+  const fullHeatmapData = tripData?.heatmap || [
     [0, 1, 3, 2],
     [1, 2, 1, 0],
     [3, 2, 0, 1],
@@ -22,6 +42,15 @@ const Conflicts: React.FC = () => {
     [2, 0, 2, 1],
     [1, 0, 1, 0]
   ];
+
+  // 映射 selectedMemberIds 到 fullHeatmapData 的索引 (假设 A=0, B=1, C=2, D=3)
+  const idToIndex: Record<string, number> = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+  const heatmapData = fullHeatmapData.map(row => 
+    selectedMemberIds.map(id => {
+      const idx = idToIndex[id];
+      return idx !== undefined ? row[idx] : 0;
+    })
+  );
 
   return (
     <div className="p-10 h-full overflow-y-auto bg-gray-50">
@@ -60,7 +89,7 @@ const Conflicts: React.FC = () => {
           <section className="col-span-7 space-y-4">
             <h3 className="text-base font-bold mb-4 text-gray-800">关键冲突列表</h3>
             <div className="space-y-4">
-              {(tripData?.conflicts || [1, 2, 3, 4]).map((conflict: any, i: number) => (
+              {(tripData?.conflicts || []).map((conflict: any, i: number) => (
                 <div key={conflict.conflict_id || i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex gap-5">
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm ${
                     conflict.severity === '高' ? 'bg-red-50 text-red-500' : 'bg-orange-50 text-orange-500'
@@ -69,18 +98,24 @@ const Conflicts: React.FC = () => {
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-bold text-gray-800">{conflict.title || '节奏冲突：A 偏向慢游，B 偏向打卡'}</h4>
+                      <h4 className="font-bold text-gray-800">{replaceUserIds(conflict.title)}</h4>
                       <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase ${
                         conflict.severity === '高' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'
                       }`}>{conflict.severity || '高'}</span>
                     </div>
                     <p className="text-xs text-gray-500 leading-relaxed mb-4">
-                      💡 {conflict.suggestion || '建议：在行程中安排“慢游+打卡”组合日，平衡节奏。'}
+                      💡 {replaceUserIds(conflict.suggestion)}
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="flex -space-x-2">
-                        {(conflict.users || ['A', 'B']).map((u: string) => (
-                          <div key={u} className="w-6 h-6 rounded-full bg-blue-600 border-2 border-white text-[10px] font-bold text-white flex items-center justify-center shadow-sm">{u}</div>
+                        {(conflict.users || []).map((u: string) => (
+                          <div 
+                            key={u} 
+                            title={idToName[u] || u}
+                            className="w-6 h-6 rounded-full bg-blue-600 border-2 border-white text-[10px] font-bold text-white flex items-center justify-center shadow-sm cursor-help"
+                          >
+                            {(idToName[u] || u)[0]}
+                          </div>
                         ))}
                       </div>
                       <span className="text-[10px] text-gray-400 font-medium ml-2">冲突类型：{conflict.type || '风格偏好'}</span>
@@ -88,17 +123,28 @@ const Conflicts: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {(!tripData?.conflicts || tripData.conflicts.length === 0) && (
+                <div className="bg-white p-10 rounded-2xl border border-dashed border-gray-200 text-center text-gray-400 text-sm">
+                  暂无明显冲突，行程规划非常顺畅 ✨
+                </div>
+              )}
             </div>
           </section>
         </div>
         
         <div className="mt-12 flex justify-center gap-4">
-          <button className="px-8 py-4 border-2 border-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all">
-            ← 返回成员画像
-          </button>
-          <button className="bg-blue-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all">
+          <Link 
+            to="/"
+            className="px-8 py-4 border-2 border-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all"
+          >
+            ← 返回旅行任务
+          </Link>
+          <Link 
+            to="/proposal"
+            className="bg-blue-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
             生成候选方案 →
-          </button>
+          </Link>
         </div>
       </div>
     </div>

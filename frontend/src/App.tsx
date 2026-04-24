@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { TripProvider } from './contexts/TripContext';
 import TripCreate from './pages/TripCreate';
-import Profiles from './pages/Profiles';
+import MemberPool from './pages/MemberPool';
 import Conflicts from './pages/Conflicts';
 import ProposalDetail from './pages/ProposalDetail';
 import Replan from './pages/Replan';
@@ -12,7 +12,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   
   const menuItems = [
     { path: '/', label: '旅行任务', icon: '📋' },
-    { path: '/profiles', label: '成员画像', icon: '👥' },
+    { path: '/members', label: '成员池', icon: '🗂️' },
     { path: '/conflicts', label: '冲突分析', icon: '⚠️' },
     { path: '/proposal', label: '方案对比', icon: '📊' },
     { path: '/replan', label: '动态重排', icon: '🔄' },
@@ -83,7 +83,7 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<TripCreate />} />
-            <Route path="/profiles" element={<Profiles />} />
+            <Route path="/members" element={<MemberPool />} />
             <Route path="/conflicts" element={<Conflicts />} />
             <Route path="/proposal" element={<ProposalDetail />} />
             <Route path="/replan" element={<Replan />} />
