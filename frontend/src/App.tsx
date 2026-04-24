@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { TripProvider } from './contexts/TripContext';
 import TripCreate from './pages/TripCreate';
 import Profiles from './pages/Profiles';
 import Conflicts from './pages/Conflicts';
@@ -77,16 +78,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 function App() {
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<TripCreate />} />
-          <Route path="/profiles" element={<Profiles />} />
-          <Route path="/conflicts" element={<Conflicts />} />
-          <Route path="/proposal" element={<ProposalDetail />} />
-          <Route path="/replan" element={<Replan />} />
-        </Routes>
-      </Layout>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <TripProvider>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<TripCreate />} />
+            <Route path="/profiles" element={<Profiles />} />
+            <Route path="/conflicts" element={<Conflicts />} />
+            <Route path="/proposal" element={<ProposalDetail />} />
+            <Route path="/replan" element={<Replan />} />
+          </Routes>
+        </Layout>
+      </TripProvider>
     </Router>
   );
 }
