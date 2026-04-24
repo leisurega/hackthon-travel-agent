@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { RadarChart } from '../components/Charts';
 import { useTrip } from '../contexts/TripContext';
 
 const Profiles: React.FC = () => {
