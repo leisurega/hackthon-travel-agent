@@ -1,0 +1,130 @@
+{
+  "replan_diff": {
+    "event": "day3_rain",
+    "event_title": "第 3 天下雨",
+    "impact_range": "Day 3 户外活动",
+    "disturbance": "小",
+    "most_affected": ["A:-6", "B:-2", "C:-1", "D:0"],
+    "compensated": ["B:+5", "C:+2", "D:+1", "A:0"],
+    "how_adjusted": [
+      "将 Day 3 户外活动替换为室内行程",
+      "延排日落拍摄至 Day 4 作为补偿",
+      "保持总预算与每日节奏基本不变",
+      "最小化成员偏好与体验扰动"
+    ],
+    "original_day_plans": [
+      {
+        "day": 3,
+        "city": "巴黎",
+        "theme": "巴黎的经典与小巷",
+        "morning": {
+          "time": "09:00",
+          "title": "城市步行",
+          "kind": "walk",
+          "is_indoor": false,
+          "tags": ["户外", "文化"],
+          "beneficiaries": ["A", "B"],
+          "cost": 0
+        },
+        "noon": {
+          "time": "12:30",
+          "title": "户外拍照",
+          "kind": "photo",
+          "is_indoor": false,
+          "tags": ["拍照"],
+          "beneficiaries": ["A"],
+          "cost": 0
+        },
+        "evening": {
+          "time": "18:30",
+          "title": "日落机位",
+          "kind": "photo",
+          "is_indoor": false,
+          "tags": ["拍照"],
+          "beneficiaries": ["A"],
+          "cost": 0
+        }
+      }
+    ],
+    "new_day_plans": [
+      {
+        "day": 3,
+        "city": "巴黎",
+        "theme": "巴黎室内艺术之旅",
+        "morning": {
+          "time": "09:30",
+          "title": "室内展览",
+          "kind": "museum",
+          "is_indoor": true,
+          "tags": ["艺术", "室内"],
+          "beneficiaries": ["B"],
+          "cost": 150
+        },
+        "noon": {
+          "time": "13:00",
+          "title": "咖啡馆休息",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": ["休息", "美食"],
+          "beneficiaries": ["C", "D"],
+          "cost": 100
+        },
+        "evening": {
+          "time": "18:00",
+          "title": "法式大餐",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": ["美食"],
+          "beneficiaries": ["D"],
+          "cost": 500
+        }
+      },
+      {
+        "day": 4,
+        "city": "巴黎",
+        "theme": "补回日落拍摄",
+        "morning": { "time": "09:00", "title": "圣母院", "kind": "museum", "is_indoor": true, "tags": ["文化"], "beneficiaries": ["B"], "cost": 100 },
+        "noon": { "time": "12:00", "title": "午餐", "kind": "restaurant", "is_indoor": true, "tags": ["美食"], "beneficiaries": ["C"], "cost": 150 },
+        "evening": {
+          "time": "18:30",
+          "title": "补回日落拍摄",
+          "kind": "photo",
+          "is_indoor": false,
+          "tags": ["拍照", "补偿"],
+          "beneficiaries": ["A"],
+          "cost": 0
+        }
+      }
+    ]
+  },
+  "new_proposal": {
+    "proposal_id": "p1_replanned",
+    "type": "公平优先",
+    "cities": ["巴黎", "佛罗伦萨", "罗马"],
+    "city_days": [3, 2, 2],
+    "total_budget": 40000,
+    "per_person_budget": 10000,
+    "per_person_per_day": 1429,
+    "recommendation_reasons": ["动态调整以应对降雨", "通过 Day 4 补偿 Day 3 的损失"],
+    "per_day": [
+      { "day": 1, "city": "巴黎", "theme": "抵达", "morning": {}, "noon": {}, "evening": {} },
+      { "day": 2, "city": "巴黎", "theme": "艺术", "morning": {}, "noon": {}, "evening": {} },
+      {
+        "day": 3,
+        "city": "巴黎",
+        "theme": "巴黎室内艺术之旅",
+        "morning": { "time": "09:30", "title": "室内展览", "kind": "museum", "is_indoor": true, "tags": ["艺术", "室内"], "beneficiaries": ["B"], "cost": 150 },
+        "noon": { "time": "13:00", "title": "咖啡馆休息", "kind": "restaurant", "is_indoor": true, "tags": ["休息", "美食"], "beneficiaries": ["C", "D"], "cost": 100 },
+        "evening": { "time": "18:00", "title": "法式大餐", "kind": "restaurant", "is_indoor": true, "tags": ["美食"], "beneficiaries": ["D"], "cost": 500 }
+      },
+      {
+        "day": 4,
+        "city": "巴黎",
+        "theme": "补回日落拍摄",
+        "morning": { "time": "09:00", "title": "圣母院", "kind": "museum", "is_indoor": true, "tags": ["文化"], "beneficiaries": ["B"], "cost": 100 },
+        "noon": { "time": "12:00", "title": "午餐", "kind": "restaurant", "is_indoor": true, "tags": ["美食"], "beneficiaries": ["C"], "cost": 150 },
+        "evening": { "time": "18:30", "title": "补回日落拍摄", "kind": "photo", "is_indoor": false, "tags": ["拍照", "补偿"], "beneficiaries": ["A"], "cost": 0 }
+      }
+    ]
+  }
+}

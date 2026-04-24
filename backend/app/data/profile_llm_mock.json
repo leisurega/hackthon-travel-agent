@@ -1,0 +1,100 @@
+{
+  "profiles": [
+    {
+      "user_id": "A",
+      "display_name": "A 用户",
+      "role": "主导成员",
+      "trip_goal": ["放松", "摄影"],
+      "hard_constraints": {
+        "budget_cap": 12000,
+        "diet": ["不吃香菜"],
+        "daily_walk_km_max": 8.0,
+        "latest_rest_time": "23:30"
+      },
+      "strong_preferences": {
+        "city_walking": 85,
+        "museum": 60,
+        "photography_golden_hour": 95,
+        "free_time": 70
+      },
+      "anti_preferences": ["高密度行程"],
+      "negotiable_range": ["可接受 0-2 小时博物馆"],
+      "key_tags": ["摄影偏好"],
+      "confidence": 90,
+      "radar": [80, 60, 90, 50, 30, 70],
+      "completeness": 85
+    },
+    {
+      "user_id": "B",
+      "display_name": "B 用户",
+      "role": "成员",
+      "trip_goal": ["博物馆", "深度文化"],
+      "hard_constraints": {
+        "budget_cap": 15000,
+        "diet": [],
+        "daily_walk_km_max": 15.0,
+        "latest_rest_time": "00:00"
+      },
+      "strong_preferences": {
+        "city_walking": 60,
+        "museum": 95,
+        "photography_golden_hour": 40,
+        "free_time": 50
+      },
+      "anti_preferences": ["购物"],
+      "negotiable_range": ["可接受酒店稍远"],
+      "key_tags": ["文化导向"],
+      "confidence": 85,
+      "radar": [40, 50, 40, 95, 20, 90],
+      "completeness": 80
+    },
+    {
+      "user_id": "C",
+      "display_name": "C 用户",
+      "role": "成员",
+      "trip_goal": ["美食", "放松"],
+      "hard_constraints": {
+        "budget_cap": 8000,
+        "diet": ["海鲜过敏"],
+        "daily_walk_km_max": 5.0,
+        "latest_rest_time": "22:00"
+      },
+      "strong_preferences": {
+        "city_walking": 30,
+        "museum": 40,
+        "photography_golden_hour": 50,
+        "free_time": 90
+      },
+      "anti_preferences": ["高强度步行"],
+      "negotiable_range": ["可接受分头行动"],
+      "key_tags": ["预算敏感"],
+      "confidence": 95,
+      "radar": [90, 95, 30, 40, 50, 40],
+      "completeness": 90
+    },
+    {
+      "user_id": "D",
+      "display_name": "D 用户",
+      "role": "成员",
+      "trip_goal": ["购物", "美食"],
+      "hard_constraints": {
+        "budget_cap": 20000,
+        "diet": [],
+        "daily_walk_km_max": 10.0,
+        "latest_rest_time": "01:00"
+      },
+      "strong_preferences": {
+        "city_walking": 70,
+        "museum": 30,
+        "photography_golden_hour": 60,
+        "free_time": 80
+      },
+      "anti_preferences": ["博物馆"],
+      "negotiable_range": ["可接受高价餐厅"],
+      "key_tags": ["购物达人"],
+      "confidence": 80,
+      "radar": [60, 90, 50, 20, 95, 30],
+      "completeness": 75
+    }
+  ]
+}
