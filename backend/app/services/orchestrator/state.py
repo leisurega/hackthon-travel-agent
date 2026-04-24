@@ -8,7 +8,8 @@ P1 defines this file. P2 and P3 are read-only consumers:
 """
 from __future__ import annotations
 
-from typing import List, Optional, TypedDict
+from typing import List, Optional
+from typing_extensions import TypedDict
 
 
 # ---------------------------------------------------------------------------
@@ -74,14 +75,15 @@ class ConflictSummary(TypedDict):
 # Proposal (single recommended plan, not 3-way comparison in MVP)
 # ---------------------------------------------------------------------------
 
-class ActivityBlock(TypedDict):
+class ActivityBlock(TypedDict, total=False):
     time: str                  # "09:00"
-    title: str                 # "奥赛博物馆"
-    kind: str                  # "museum" | "walk" | "photo" | "restaurant" | "indoor" | ...
+    title: str                 # "故宫博物院"
+    kind: str                  # "museum" | "walk" | "photo" | "restaurant" | "shopping" | "transit" | ...
     is_indoor: bool
     tags: List[str]            # ["室内","文化","拍照"]
     beneficiaries: List[str]   # ["A","C"] -- users this activity primarily satisfies
     cost: int                  # CNY per person (approx)
+    poi_id: str                # optional, references an entry in state["poi_pool"]
 
 
 class DayPlan(TypedDict):
@@ -96,11 +98,11 @@ class DayPlan(TypedDict):
 class Proposal(TypedDict):
     proposal_id: str
     type: str                  # "公平优先" (MVP default)
-    cities: List[str]          # ["巴黎","佛罗伦萨","罗马"]
+    cities: List[str]          # ["北京","上海","杭州"]
     city_days: List[int]       # [3,2,2]
-    total_budget: int          # 40000
-    per_person_budget: int     # 10000
-    per_person_per_day: int    # 1429
+    total_budget: int          # 30000
+    per_person_budget: int     # 7500
+    per_person_per_day: int    # 1071
     recommendation_reasons: List[str]
     per_day: List[DayPlan]     # length = total days
 
@@ -174,7 +176,8 @@ class TripState(TypedDict, total=False):
     conflict_summary: ConflictSummary
     heatmap: List[List[int]]        # 6 rows (dims) x 4 cols (users), values 0-3
 
-    # Populated by generator_agent
+    # Populated by generator_agent (and its preceding POI service call)
+    poi_pool: dict                 # {city: [POI dict, ...]}
     proposal: Proposal
 
     # Populated by scorer_node

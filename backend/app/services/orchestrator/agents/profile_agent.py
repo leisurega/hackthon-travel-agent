@@ -14,6 +14,13 @@ from ..state import TripState
 
 def run(state: TripState) -> TripState:
     trace = state.get("agent_trace", []) or []
+    
+    # If profiles are already provided (e.g. from profile_store in create_trip), skip generation
+    if state.get("profiles"):
+        trace.append(f"profile_agent: skipping generation, using {len(state['profiles'])} existing profiles")
+        state["agent_trace"] = trace
+        return state
+
     trace.append("profile_agent: building prompt")
 
     response = call_llm(

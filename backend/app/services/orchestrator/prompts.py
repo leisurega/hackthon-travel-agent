@@ -133,7 +133,7 @@ EXPECTED_OUTPUT_SCHEMA_CONFLICT = """见 SYS_CONFLICT，顶层是 {"conflicts": 
 # ===========================================================================
 
 SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generator Agent。
-职责：基于 4 份画像 + 冲突列表 + 预算 + 候选城市，生成 1 套公平优先的推荐方案。
+职责：基于 4 份画像 + 冲突列表 + 预算 + 候选城市 + **POI 候选池**，生成 1 套公平优先的推荐方案。
 严格输出 JSON，不要 markdown、不要额外解释。
 
 期望输出 schema：
@@ -141,11 +141,11 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
   "proposal": {
     "proposal_id": "p1",
     "type": "公平优先",
-    "cities": ["巴黎","佛罗伦萨","罗马"],
+    "cities": ["北京","上海","杭州"],
     "city_days": [3, 2, 2],
-    "total_budget": 40000,
-    "per_person_budget": 10000,
-    "per_person_per_day": 1429,
+    "total_budget": 30000,
+    "per_person_budget": 7500,
+    "per_person_per_day": 1071,
     "recommendation_reasons": [
       "满足核心偏好，冲突较少",
       "日程节奏适中，体验丰富",
@@ -155,16 +155,17 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
     "per_day": [
       {
         "day": 1,
-        "city": "巴黎",
-        "theme": "抵达巴黎，初识浪漫之都",
+        "city": "北京",
+        "theme": "抵达北京，天安门故宫中轴线",
         "morning": {
           "time": "10:00",
-          "title": "抵达巴黎，入住酒店",
+          "title": "抵达北京，酒店放行李",
           "kind": "transit",
           "is_indoor": true,
           "tags": ["入住"],
           "beneficiaries": ["A","B","C","D"],
-          "cost": 0
+          "cost": 0,
+          "poi_id": "bj_hotel_wangfujing"
         },
         "noon":   { ... 同上 },
         "evening":{ ... 同上 }
@@ -173,20 +174,34 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
   }
 }
 
-约束：
+硬性约束：
+- **每个 ActivityBlock 的 title / poi_id 必须来自下方 POI 候选池，严禁创造池外 POI**（transit/入住除外）。
+- ActivityBlock.tags 须从对应 POI 的 tags 中选择，再按需补充 1-2 个情境标签。
 - per_day 长度等于 sum(city_days)（默认 7 天）。
-- morning/noon/evening 每个 ActivityBlock 必须有完整字段。
-- beneficiaries 用 user_id 字母 ["A","B","C","D"] 的子集。
+- morning/noon/evening 每个 ActivityBlock 必须有完整字段：time/title/kind/is_indoor/tags/beneficiaries/cost/poi_id。
+- beneficiaries 用 user_id 字母 ["A","B","C","D"] 的子集，按该 POI 的 tags 与画像匹配结果选取。
+- 总成本 sum(cost) 不得超过 budget。
+- 注重公平：每个成员至少应在 3 天里出现在 beneficiaries 中，且每个 trip_goal 至少命中 2 次。
 """
 
 
 def user_prompt_generator(state: TripState) -> str:
+    poi_pool = state.get("poi_pool") or {}
+    if poi_pool:
+        pool_part = (
+            f"POI 候选池（只能从中选，poi_id 必须照搬）：\n"
+            f"{json.dumps(poi_pool, ensure_ascii=False, indent=2)}\n\n"
+        )
+    else:
+        pool_part = "POI 候选池：暂无（允许基于常识生成，但标注 poi_id=null）\n\n"
+
     return (
-        f"目的地范围：{state.get('cities', ['巴黎','佛罗伦萨','罗马'])}\n"
+        f"目的地范围：{state.get('cities', ['北京','上海','杭州'])}\n"
         f"天数：{state.get('days', 7)}\n"
-        f"总预算：{state.get('budget_total', 40000)} CNY\n\n"
+        f"总预算：{state.get('budget_total', 30000)} CNY\n\n"
         f"成员画像：\n{json.dumps(state.get('profiles', []), ensure_ascii=False, indent=2)}\n\n"
         f"冲突列表：\n{json.dumps(state.get('conflicts', []), ensure_ascii=False, indent=2)}\n\n"
+        f"{pool_part}"
         f"请输出 1 套公平优先的推荐方案。"
     )
 

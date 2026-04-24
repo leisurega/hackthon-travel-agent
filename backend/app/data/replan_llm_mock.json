@@ -1,98 +1,123 @@
 {
   "replan_diff": {
     "event": "day3_rain",
-    "event_title": "第 3 天下雨",
-    "impact_range": "Day 3 户外活动",
+    "event_title": "Day 3 北京下雨",
+    "impact_range": "Day 3 慕田峪长城与 798 户外段",
     "disturbance": "小",
     "most_affected": ["A:-6", "B:-2", "C:-1", "D:0"],
-    "compensated": ["B:+5", "C:+2", "D:+1", "A:0"],
+    "compensated": ["B:+5", "A:+3", "C:+1", "D:0"],
     "how_adjusted": [
-      "将 Day 3 户外活动替换为室内行程",
-      "延排日落拍摄至 Day 4 作为补偿",
-      "保持总预算与每日节奏基本不变",
-      "最小化成员偏好与体验扰动"
+      "将 Day 3 慕田峪长城替换为国家博物馆室内行程",
+      "Day 3 下午 798 改为三里屯太古里室内购物（补偿 C/D）",
+      "Day 5 上海外滩增加日落拍摄时段（补偿 A）",
+      "总预算与每日节奏基本不变"
     ],
     "original_day_plans": [
       {
         "day": 3,
-        "city": "巴黎",
-        "theme": "巴黎的经典与小巷",
+        "city": "北京",
+        "theme": "慕田峪长城 + 798 艺术区",
         "morning": {
-          "time": "09:00",
-          "title": "城市步行",
-          "kind": "walk",
+          "time": "08:00",
+          "title": "慕田峪长城",
+          "kind": "photo",
           "is_indoor": false,
-          "tags": ["户外", "文化"],
-          "beneficiaries": ["A", "B"],
-          "cost": 0
+          "tags": ["拍照", "户外", "地标"],
+          "beneficiaries": ["A"],
+          "cost": 120,
+          "poi_id": "bj_mutianyu_great_wall"
         },
         "noon": {
-          "time": "12:30",
-          "title": "户外拍照",
-          "kind": "photo",
-          "is_indoor": false,
-          "tags": ["拍照"],
-          "beneficiaries": ["A"],
-          "cost": 0
+          "time": "13:00",
+          "title": "山脚下农家菜",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": ["美食", "农家菜"],
+          "beneficiaries": ["C", "D"],
+          "cost": 120,
+          "poi_id": "bj_restaurant_nongjia"
         },
         "evening": {
-          "time": "18:30",
-          "title": "日落机位",
-          "kind": "photo",
+          "time": "17:00",
+          "title": "798 艺术区",
+          "kind": "museum",
           "is_indoor": false,
-          "tags": ["拍照"],
-          "beneficiaries": ["A"],
-          "cost": 0
+          "tags": ["艺术", "拍照", "深度文化"],
+          "beneficiaries": ["A", "B", "D"],
+          "cost": 60,
+          "poi_id": "bj_798_art"
         }
       }
     ],
     "new_day_plans": [
       {
         "day": 3,
-        "city": "巴黎",
-        "theme": "巴黎室内艺术之旅",
+        "city": "北京",
+        "theme": "雨天室内文化 + 购物日",
         "morning": {
           "time": "09:30",
-          "title": "室内展览",
+          "title": "中国国家博物馆",
           "kind": "museum",
           "is_indoor": true,
-          "tags": ["艺术", "室内"],
-          "beneficiaries": ["B"],
-          "cost": 150
+          "tags": ["深度文化", "历史", "室内"],
+          "beneficiaries": ["A", "B"],
+          "cost": 0,
+          "poi_id": "bj_national_museum"
         },
         "noon": {
           "time": "13:00",
-          "title": "咖啡馆休息",
+          "title": "王府井小吃街室内铺",
           "kind": "restaurant",
           "is_indoor": true,
-          "tags": ["休息", "美食"],
+          "tags": ["美食", "老北京", "室内"],
           "beneficiaries": ["C", "D"],
-          "cost": 100
+          "cost": 120,
+          "poi_id": "bj_wangfujing_snack"
         },
         "evening": {
-          "time": "18:00",
-          "title": "法式大餐",
-          "kind": "restaurant",
+          "time": "16:30",
+          "title": "三里屯太古里室内购物",
+          "kind": "shopping",
           "is_indoor": true,
-          "tags": ["美食"],
-          "beneficiaries": ["D"],
-          "cost": 500
+          "tags": ["购物", "放松", "美食"],
+          "beneficiaries": ["C", "D"],
+          "cost": 300,
+          "poi_id": "bj_sanlitun"
         }
       },
       {
-        "day": 4,
-        "city": "巴黎",
-        "theme": "补回日落拍摄",
-        "morning": { "time": "09:00", "title": "圣母院", "kind": "museum", "is_indoor": true, "tags": ["文化"], "beneficiaries": ["B"], "cost": 100 },
-        "noon": { "time": "12:00", "title": "午餐", "kind": "restaurant", "is_indoor": true, "tags": ["美食"], "beneficiaries": ["C"], "cost": 150 },
+        "day": 5,
+        "city": "上海",
+        "theme": "浦东美术馆 + 南京路 + 外滩补拍",
+        "morning": {
+          "time": "09:30",
+          "title": "浦东美术馆",
+          "kind": "museum",
+          "is_indoor": true,
+          "tags": ["艺术", "深度文化"],
+          "beneficiaries": ["A", "B"],
+          "cost": 100,
+          "poi_id": "sh_pudong_museum"
+        },
+        "noon": {
+          "time": "12:30",
+          "title": "南京路步行街午餐 + 购物",
+          "kind": "shopping",
+          "is_indoor": false,
+          "tags": ["购物", "美食", "放松"],
+          "beneficiaries": ["C", "D"],
+          "cost": 350,
+          "poi_id": "sh_nanjinglu"
+        },
         "evening": {
-          "time": "18:30",
-          "title": "补回日落拍摄",
+          "time": "17:00",
+          "title": "外滩日落 + 夜景补拍（补偿）",
           "kind": "photo",
           "is_indoor": false,
-          "tags": ["拍照", "补偿"],
+          "tags": ["拍照", "黄金时段", "补偿"],
           "beneficiaries": ["A"],
-          "cost": 0
+          "cost": 0,
+          "poi_id": "sh_bund"
         }
       }
     ]
@@ -100,30 +125,261 @@
   "new_proposal": {
     "proposal_id": "p1_replanned",
     "type": "公平优先",
-    "cities": ["巴黎", "佛罗伦萨", "罗马"],
+    "cities": ["北京", "上海", "杭州"],
     "city_days": [3, 2, 2],
-    "total_budget": 40000,
-    "per_person_budget": 10000,
-    "per_person_per_day": 1429,
-    "recommendation_reasons": ["动态调整以应对降雨", "通过 Day 4 补偿 Day 3 的损失"],
+    "total_budget": 30000,
+    "per_person_budget": 7500,
+    "per_person_per_day": 1071,
+    "recommendation_reasons": [
+      "Day 3 避雨 + Day 5 补拍，最小扰动应对天气",
+      "总行程结构保持不变，预算持平",
+      "新方案对 B 更有利（+5），A 通过 Day 5 补拍得到补偿"
+    ],
     "per_day": [
-      { "day": 1, "city": "巴黎", "theme": "抵达", "morning": {}, "noon": {}, "evening": {} },
-      { "day": 2, "city": "巴黎", "theme": "艺术", "morning": {}, "noon": {}, "evening": {} },
+      {
+        "day": 1,
+        "city": "北京",
+        "theme": "抵达北京，天安门故宫中轴线",
+        "morning": {
+          "time": "10:00",
+          "title": "抵达北京，酒店放行李",
+          "kind": "transit",
+          "is_indoor": true,
+          "tags": ["入住"],
+          "beneficiaries": ["A", "B", "C", "D"],
+          "cost": 0,
+          "poi_id": "bj_hotel_wangfujing"
+        },
+        "noon": {
+          "time": "12:30",
+          "title": "四季民福烤鸭（故宫店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": ["美食", "京菜"],
+          "beneficiaries": ["C", "D"],
+          "cost": 180,
+          "poi_id": "bj_restaurant_sijiminfu"
+        },
+        "evening": {
+          "time": "17:00",
+          "title": "天安门广场 + 故宫角楼日落",
+          "kind": "photo",
+          "is_indoor": false,
+          "tags": ["拍照", "文化", "地标"],
+          "beneficiaries": ["A", "B"],
+          "cost": 0,
+          "poi_id": "bj_tiananmen"
+        }
+      },
+      {
+        "day": 2,
+        "city": "北京",
+        "theme": "故宫博物院 + 南锣鼓巷",
+        "morning": {
+          "time": "08:30",
+          "title": "故宫博物院深度游",
+          "kind": "museum",
+          "is_indoor": true,
+          "tags": ["博物馆", "深度文化", "历史"],
+          "beneficiaries": ["A", "B"],
+          "cost": 60,
+          "poi_id": "bj_forbidden_city"
+        },
+        "noon": {
+          "time": "13:00",
+          "title": "南锣鼓巷小吃",
+          "kind": "restaurant",
+          "is_indoor": false,
+          "tags": ["美食", "小吃", "老北京"],
+          "beneficiaries": ["C", "D"],
+          "cost": 100,
+          "poi_id": "bj_nanluoguxiang"
+        },
+        "evening": {
+          "time": "18:30",
+          "title": "什刹海酒吧街夜景",
+          "kind": "walk",
+          "is_indoor": false,
+          "tags": ["拍照", "放松", "夜景"],
+          "beneficiaries": ["A", "D"],
+          "cost": 80,
+          "poi_id": "bj_shichahai"
+        }
+      },
       {
         "day": 3,
-        "city": "巴黎",
-        "theme": "巴黎室内艺术之旅",
-        "morning": { "time": "09:30", "title": "室内展览", "kind": "museum", "is_indoor": true, "tags": ["艺术", "室内"], "beneficiaries": ["B"], "cost": 150 },
-        "noon": { "time": "13:00", "title": "咖啡馆休息", "kind": "restaurant", "is_indoor": true, "tags": ["休息", "美食"], "beneficiaries": ["C", "D"], "cost": 100 },
-        "evening": { "time": "18:00", "title": "法式大餐", "kind": "restaurant", "is_indoor": true, "tags": ["美食"], "beneficiaries": ["D"], "cost": 500 }
+        "city": "北京",
+        "theme": "雨天室内文化 + 购物日",
+        "morning": {
+          "time": "09:30",
+          "title": "中国国家博物馆",
+          "kind": "museum",
+          "is_indoor": true,
+          "tags": ["深度文化", "历史", "室内"],
+          "beneficiaries": ["A", "B"],
+          "cost": 0,
+          "poi_id": "bj_national_museum"
+        },
+        "noon": {
+          "time": "13:00",
+          "title": "王府井小吃街室内铺",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": ["美食", "老北京", "室内"],
+          "beneficiaries": ["C", "D"],
+          "cost": 120,
+          "poi_id": "bj_wangfujing_snack"
+        },
+        "evening": {
+          "time": "16:30",
+          "title": "三里屯太古里室内购物",
+          "kind": "shopping",
+          "is_indoor": true,
+          "tags": ["购物", "放松", "美食"],
+          "beneficiaries": ["C", "D"],
+          "cost": 300,
+          "poi_id": "bj_sanlitun"
+        }
       },
       {
         "day": 4,
-        "city": "巴黎",
-        "theme": "补回日落拍摄",
-        "morning": { "time": "09:00", "title": "圣母院", "kind": "museum", "is_indoor": true, "tags": ["文化"], "beneficiaries": ["B"], "cost": 100 },
-        "noon": { "time": "12:00", "title": "午餐", "kind": "restaurant", "is_indoor": true, "tags": ["美食"], "beneficiaries": ["C"], "cost": 150 },
-        "evening": { "time": "18:30", "title": "补回日落拍摄", "kind": "photo", "is_indoor": false, "tags": ["拍照", "补偿"], "beneficiaries": ["A"], "cost": 0 }
+        "city": "上海",
+        "theme": "高铁上海 + 外滩夜景",
+        "morning": {
+          "time": "09:00",
+          "title": "北京南 → 上海虹桥 高铁",
+          "kind": "transit",
+          "is_indoor": true,
+          "tags": ["城际"],
+          "beneficiaries": ["A", "B", "C", "D"],
+          "cost": 600,
+          "poi_id": "train_bj_sh"
+        },
+        "noon": {
+          "time": "13:30",
+          "title": "豫园南翔馒头店",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": ["美食", "小笼包", "老字号"],
+          "beneficiaries": ["C", "D"],
+          "cost": 120,
+          "poi_id": "sh_nanxiang_mantou"
+        },
+        "evening": {
+          "time": "18:30",
+          "title": "外滩万国建筑夜景 + 黄浦江游船",
+          "kind": "photo",
+          "is_indoor": false,
+          "tags": ["拍照", "地标", "浪漫"],
+          "beneficiaries": ["A", "D"],
+          "cost": 150,
+          "poi_id": "sh_bund"
+        }
+      },
+      {
+        "day": 5,
+        "city": "上海",
+        "theme": "浦东美术馆 + 南京路 + 外滩补拍",
+        "morning": {
+          "time": "09:30",
+          "title": "浦东美术馆",
+          "kind": "museum",
+          "is_indoor": true,
+          "tags": ["博物馆", "艺术", "深度文化"],
+          "beneficiaries": ["A", "B"],
+          "cost": 100,
+          "poi_id": "sh_pudong_museum"
+        },
+        "noon": {
+          "time": "12:30",
+          "title": "南京路步行街午餐 + 购物",
+          "kind": "shopping",
+          "is_indoor": false,
+          "tags": ["购物", "美食", "放松"],
+          "beneficiaries": ["C", "D"],
+          "cost": 350,
+          "poi_id": "sh_nanjinglu"
+        },
+        "evening": {
+          "time": "17:00",
+          "title": "外滩日落 + 夜景补拍（补偿）",
+          "kind": "photo",
+          "is_indoor": false,
+          "tags": ["拍照", "黄金时段", "补偿"],
+          "beneficiaries": ["A"],
+          "cost": 0,
+          "poi_id": "sh_bund"
+        }
+      },
+      {
+        "day": 6,
+        "city": "杭州",
+        "theme": "西湖游船 + 雷峰塔夕阳",
+        "morning": {
+          "time": "09:30",
+          "title": "西湖游船（断桥-三潭印月）",
+          "kind": "walk",
+          "is_indoor": false,
+          "tags": ["拍照", "放松", "山水"],
+          "beneficiaries": ["A", "C"],
+          "cost": 80,
+          "poi_id": "hz_west_lake"
+        },
+        "noon": {
+          "time": "12:30",
+          "title": "楼外楼（孤山店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": ["美食", "杭帮菜", "老字号"],
+          "beneficiaries": ["C", "D"],
+          "cost": 220,
+          "poi_id": "hz_louwailou"
+        },
+        "evening": {
+          "time": "17:30",
+          "title": "雷峰塔 + 净慈寺夕阳",
+          "kind": "photo",
+          "is_indoor": false,
+          "tags": ["拍照", "黄金时段", "文化"],
+          "beneficiaries": ["A", "B"],
+          "cost": 40,
+          "poi_id": "hz_leifeng_pagoda"
+        }
+      },
+      {
+        "day": 7,
+        "city": "杭州",
+        "theme": "灵隐寺 + 龙井村 · 返程",
+        "morning": {
+          "time": "09:00",
+          "title": "灵隐寺 + 飞来峰",
+          "kind": "museum",
+          "is_indoor": false,
+          "tags": ["深度文化", "拍照"],
+          "beneficiaries": ["A", "B"],
+          "cost": 75,
+          "poi_id": "hz_lingyin_temple"
+        },
+        "noon": {
+          "time": "12:30",
+          "title": "龙井村农家茶餐",
+          "kind": "restaurant",
+          "is_indoor": false,
+          "tags": ["美食", "放松"],
+          "beneficiaries": ["C"],
+          "cost": 150,
+          "poi_id": "hz_longjing_village"
+        },
+        "evening": {
+          "time": "17:00",
+          "title": "杭州东 → 返程",
+          "kind": "transit",
+          "is_indoor": true,
+          "tags": ["返程"],
+          "beneficiaries": ["A", "B", "C", "D"],
+          "cost": 500,
+          "poi_id": "train_hz_home"
+        }
       }
     ]
   }

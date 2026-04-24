@@ -3,36 +3,56 @@
     {
       "conflict_id": "c1",
       "type": "节奏冲突",
-      "title": "节奏冲突：A 偏向慢游，B 偏向高密度打卡",
+      "title": "节奏冲突：部分成员偏向慢游，部分成员偏向高密度打卡",
       "users": ["A", "B"],
       "severity": "高",
-      "description": "A 偏向慢游，B 偏向高密度打卡",
+      "description": "成员 A 偏向慢游（每日 8km 上限），成员 B 偏向高密度打卡",
       "suggestion": "建议：在行程中安排'慢游+打卡'组合段，平衡节奏。",
       "is_hard": false
     },
     {
       "conflict_id": "c2",
       "type": "预算冲突",
-      "title": "预算冲突：C 预算上限较低，D 希望住市中心",
+      "title": "预算冲突：成员 C 预算上限较低，与成员 D 的高预算存在差异",
       "users": ["C", "D"],
+      "severity": "高",
+      "description": "成员 C 预算上限 8000，成员 D 希望住高档酒店（预算 20000）",
+      "suggestion": "建议：选择性价比更高的市中心周边住宿，平衡预算需求。",
+      "is_hard": true
+    },
+    {
+      "conflict_id": "c3",
+      "type": "饮食冲突",
+      "title": "饮食冲突：成员 C 存在过敏限制，与成员 D 的偏好存在冲突",
+      "users": ["C", "D"],
+      "severity": "高",
+      "description": "成员 C 海鲜过敏；成员 D 希望尝试本地海鲜餐厅",
+      "suggestion": "建议：餐厅选择避开海鲜主题，以本帮/京/杭菜为主。",
+      "is_hard": true
+    },
+    {
+      "conflict_id": "c4",
+      "type": "兴趣冲突",
+      "title": "兴趣冲突：成员 B 与成员 D 对博物馆的兴趣存在显著差异",
+      "users": ["B", "D"],
       "severity": "中",
-      "description": "C 预算上限较低，D 希望住市中心",
-      "suggestion": "建议：选择性价比更高的市中心周边住宿。",
+      "description": "成员 B 强偏博物馆（95%），成员 D 将博物馆列为反感项",
+      "suggestion": "建议：博物馆日可分头行动，成员 D 安排自由活动。",
       "is_hard": false
     }
   ],
   "conflict_summary": {
-    "total": 12,
-    "high_priority": 4,
+    "total": 4,
+    "high_priority": 3,
     "hard": 2,
-    "feasibility": 71
+    "feasibility": 70
   },
   "heatmap": [
     [0, 1, 3, 2],
     [1, 2, 1, 0],
     [3, 2, 0, 1],
-    [0, 1, 2, 1],
-    [2, 0, 2, 1],
+    [0, 1, 2, 3],
+    [2, 0, 3, 1],
     [1, 0, 1, 0]
   ]
 }
