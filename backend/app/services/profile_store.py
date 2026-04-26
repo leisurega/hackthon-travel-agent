@@ -47,25 +47,51 @@ def _migrate_old_profile(old: Dict) -> UserProfile:
         "negotiable_range": new_neg,
         "scoring_weights": {"T": 0.15, "B": 0.15, "P": 0.20, "I": 0.25, "F": 0.15, "S": 0.10},
         "compensation_preference": [],
-        # Keep legacy for reference
-        "trip_goal": old.get("trip_goal"),
-        "key_tags": old.get("key_tags"),
-        "radar": old.get("radar"),
-        "completeness": old.get("completeness"),
-        "confidence": old.get("confidence")
     }
     return new_profile
 
 def _save_to_disk():
     """Save the current in-memory profiles to the persistence file."""
     try:
-        with open(PERSISTENCE_FILE, "w", encoding="utf-8") as f:
-            json.dump({
-                "_schema_version": SCHEMA_VERSION,
-                "profiles": list(_PROFILES.values())
-            }, f, ensure_ascii=False, indent=2)
+        payload = {
+            "_schema_version": SCHEMA_VERSION,
+            "profiles": list(_PROFILES.values())
+        }
+        tmp_file = PERSISTENCE_FILE + ".tmp"
+        with open(tmp_file, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_file, PERSISTENCE_FILE)
+        print(f"Saved {len(_PROFILES)} profiles to {PERSISTENCE_FILE} (atomic)")
     except Exception as e:
         print(f"Error saving profiles to disk: {e}")
+
+def _load_from_seed():
+    """Fallback to seed data if persistence doesn't exist."""
+    global _PROFILES
+    seed_file = os.path.join(os.path.dirname(__file__), "..", "data", "profiles_v2_seed.json")
+    if not os.path.exists(seed_file):
+        seed_file = os.path.join(os.path.dirname(__file__), "..", "data", "profile_llm_mock.json")
+
+    if os.path.exists(seed_file):
+        try:
+            with open(seed_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                profiles = data.get("profiles", [])
+                if data.get("_schema_version", 1) < SCHEMA_VERSION:
+                    for p in profiles:
+                        new_p = _migrate_old_profile(p)
+                        _PROFILES[new_p["user_id"]] = new_p
+                else:
+                    for p in profiles:
+                        _PROFILES[p["user_id"]] = p
+            print(f"Seeded {len(_PROFILES)} profiles from {seed_file}")
+            _save_to_disk()
+        except Exception as e:
+            print(f"Error seeding profiles: {e}")
+    else:
+        print(f"Warning: Seed file not found at {seed_file}")
 
 def seed_profiles():
     """Seed the profile store with default profiles from mock data or persistence file."""
@@ -76,19 +102,14 @@ def seed_profiles():
         try:
             with open(PERSISTENCE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                
-                # Check for schema version
                 current_version = data.get("_schema_version", 1)
                 if current_version < SCHEMA_VERSION:
                     print(f"Migrating profiles from v{current_version} to v{SCHEMA_VERSION}...")
-                    # Backup old file
                     shutil.copy2(PERSISTENCE_FILE, PERSISTENCE_FILE + ".bak")
-                    
                     profiles = data.get("profiles", [])
                     for p in profiles:
                         new_p = _migrate_old_profile(p)
                         _PROFILES[new_p["user_id"]] = new_p
-                    
                     _save_to_disk()
                     print(f"Migration complete. Backed up to {PERSISTENCE_FILE}.bak")
                 else:
@@ -97,35 +118,12 @@ def seed_profiles():
             print(f"Loaded {len(_PROFILES)} profiles from {PERSISTENCE_FILE}")
             return
         except Exception as e:
-            print(f"Error loading from persistence file: {e}")
+            print(f"CRITICAL: Error loading from persistence file: {e}")
+            print("To prevent data loss, seed fallback is disabled when persistence file exists but is corrupted.")
+            return
 
-    # 2. Fallback to seed data if persistence doesn't exist or failed
-    seed_file = os.path.join(os.path.dirname(__file__), "..", "data", "profiles_v2_seed.json")
-    if not os.path.exists(seed_file):
-        # Compatibility with old mock file name if seed not yet created
-        seed_file = os.path.join(os.path.dirname(__file__), "..", "data", "profile_llm_mock.json")
-
-    try:
-        if os.path.exists(seed_file):
-            with open(seed_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                profiles = data.get("profiles", [])
-                
-                # If seed file is still v1, migrate it
-                if data.get("_schema_version", 1) < SCHEMA_VERSION:
-                    for p in profiles:
-                        new_p = _migrate_old_profile(p)
-                        _PROFILES[new_p["user_id"]] = new_p
-                else:
-                    for p in profiles:
-                        _PROFILES[p["user_id"]] = p
-                        
-            print(f"Seeded {len(_PROFILES)} profiles from {seed_file}")
-            _save_to_disk()
-        else:
-            print(f"Warning: Seed file not found at {seed_file}")
-    except Exception as e:
-        print(f"Error seeding profiles: {e}")
+    # 2. Fallback to seed data only if persistence doesn't exist
+    _load_from_seed()
 
 def list_profiles() -> List[UserProfile]:
     """List all available profiles in the pool."""
@@ -139,17 +137,27 @@ def upsert_profile(profile: UserProfile) -> UserProfile:
     """Add or update a profile in the pool."""
     user_id = profile.get("user_id")
     if not user_id:
-        # Simple ID generation if missing
         user_id = f"USER_{len(_PROFILES) + 1}"
         profile["user_id"] = user_id
-    _PROFILES[user_id] = profile
+    
+    # Shallow merge to prevent data loss if frontend omits some fields
+    existing = _PROFILES.get(user_id)
+    if existing:
+        merged = {**existing, **profile}
+        print(f"Updated profile for {user_id} (merged)")
+    else:
+        merged = profile
+        print(f"Created new profile for {user_id}")
+        
+    _PROFILES[user_id] = merged
     _save_to_disk()
-    return profile
+    return merged
 
 def delete_profile(user_id: str) -> bool:
     """Delete a profile from the pool."""
     if user_id in _PROFILES:
         del _PROFILES[user_id]
+        print(f"Deleted profile for {user_id}")
         _save_to_disk()
         return True
     return False

@@ -1,11 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTrip } from '../contexts/TripContext';
+import { humanizeMemberRefs } from '../utils/humanizeMemberRefs';
 
 const PHASE_META: Record<string, { label: string; icon: string; color: string }> = {
   profile: { label: '画像', icon: '👤', color: 'text-purple-600 bg-purple-50 border-purple-200' },
   conflict: { label: '冲突', icon: '⚡', color: 'text-orange-600 bg-orange-50 border-orange-200' },
+  keyword: { label: '关键词', icon: 'K', color: 'text-teal-600 bg-teal-50 border-teal-200' },
+  pool: { label: 'POI池', icon: 'P', color: 'text-cyan-600 bg-cyan-50 border-cyan-200' },
+  supplement: { label: '反思补充', icon: 'R', color: 'text-rose-600 bg-rose-50 border-rose-200' },
   generator: { label: '方案生成', icon: '🧭', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  scorer: { label: '评分', icon: '📊', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+  evaluator: { label: '评估打分', icon: 'E', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+  time_fixer: { label: '时间修复', icon: 'T', color: 'text-violet-600 bg-violet-50 border-violet-200' },
   explainer: { label: '解释', icon: '💡', color: 'text-amber-600 bg-amber-50 border-amber-200' },
   replanner: { label: '重排', icon: '🔄', color: 'text-pink-600 bg-pink-50 border-pink-200' },
   rescorer: { label: '复评', icon: '🧮', color: 'text-cyan-600 bg-cyan-50 border-cyan-200' },
@@ -44,11 +49,51 @@ const AgentTracePanel: React.FC = () => {
   const { tripData, loading } = useTrip();
   const [open, setOpen] = useState(true);
   const [autoOpenedFor, setAutoOpenedFor] = useState<string | null>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const profileById = useMemo(
+    () => Object.fromEntries((tripData?.profiles || []).map((p: any) => [p.user_id, p])),
+    [tripData?.profiles]
+  );
 
   const traces = useMemo<ParsedTrace[]>(() => {
     const list: string[] = tripData?.agent_trace || [];
-    return list.map(parseTrace);
-  }, [tripData]);
+    return list.map((raw) => {
+      const t = parseTrace(raw);
+      return { ...t, message: humanizeMemberRefs(t.message, profileById) };
+    });
+  }, [tripData?.agent_trace, profileById]);
+
+  // Handle dragging
+  const onMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.drag-handle')) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    }
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragStart.x,
+          y: e.clientY - dragStart.y
+        });
+      }
+    };
+    const onMouseUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isDragging, dragStart]);
 
   // Auto-open the panel the first time we receive trace for a new trip.
   useEffect(() => {
@@ -65,11 +110,22 @@ const AgentTracePanel: React.FC = () => {
   const lastPhase = traces.length > 0 ? traces[traces.length - 1].phase : null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div 
+      className="fixed z-50 font-sans"
+      style={{ 
+        bottom: open ? 'auto' : '24px', 
+        right: open ? 'auto' : '24px',
+        left: open ? `calc(100vw - 408px + ${position.x}px)` : 'auto',
+        top: open ? `calc(100vh - 500px + ${position.y}px)` : 'auto'
+      }}
+    >
       {open ? (
         <div className="w-96 max-h-[60vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-            <div className="flex items-center gap-2">
+          <div 
+            onMouseDown={onMouseDown}
+            className="drag-handle flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white cursor-move"
+          >
+            <div className="flex items-center gap-2 pointer-events-none">
               <span className="text-base">🧠</span>
               <div>
                 <div className="text-xs font-bold uppercase tracking-wider">Agent Trace</div>

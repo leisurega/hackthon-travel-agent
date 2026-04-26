@@ -61,17 +61,23 @@ def analyze_time_window(proposal: Dict[str, Any], poi_pool: Dict[str, List[Dict[
             open_time = poi.get("open_time")
             if not open_time or not isinstance(open_time, dict): continue
             
-            act_time = activity.get("time")
-            if not act_time: continue
+            start = activity.get("start_time") or activity.get("time")
+            end = activity.get("end_time") or start # Fallback to start if end is missing
             
-            if not within_open_window(act_time, open_time):
+            if not start: continue
+            
+            # Check if both start and end are within open window
+            start_ok = within_open_window(start, open_time)
+            end_ok = within_open_window(end, open_time)
+            
+            if not start_ok or not end_ok:
                 violations.append({
                     "user_id": "all", # Time window is a group-level hard constraint
                     "day": day_idx,
                     "slot": slot,
                     "activity": activity.get("title"),
                     "poi_id": poi_id,
-                    "act_time": act_time,
+                    "act_time": f"{start}-{end}" if start != end else start,
                     "open_window": f"{open_time['start']}-{open_time['end']}",
                     "type": "time_window_violation"
                 })
@@ -97,12 +103,12 @@ def analyze_intensity(proposal: Dict[str, Any], profiles: List[UserProfile]) -> 
                 
                 # In production, we'd look up the POI metadata from the pool
                 # For now, we assume the generator might have put it in or we look it up
-                # (In our system, POIs in the pool have walk_km_estimate)
+                # (In our system, POIs in the pool have visit_walk_km)
                 # Here we simulate the lookup from a flattened pool
                 poi_id = activity.get("poi_id")
                 # This is a simplification; in reality we'd have the state["poi_pool"]
                 # For the sake of the node, we'll assume the km is available or use a default
-                km = activity.get("walk_km_estimate", 0.5) 
+                km = activity.get("visit_walk_km") or activity.get("walk_km_estimate", 0.5) 
                 daily_km += km
                 if km > 0:
                     contributing_pois.append(activity.get("title", "Unknown"))
@@ -192,24 +198,137 @@ def analyze_dietary_safety(proposal: Dict[str, Any], profiles: List[UserProfile]
 # Layer C: Aggregation
 # ---------------------------------------------------------------------------
 
+def analyze_lifestyle(proposal: Dict[str, Any], profiles: List[UserProfile]) -> List[Dict[str, Any]]:
+    """Lifestyle preference checks. All entries carry `severity` field:
+    - hard: must-satisfy structural requirements (e.g. explicit highlight count)
+    - soft: lifestyle preferences (early start, late rest, golden-hour photography)
+    """
+    violations = []
+    per_day = proposal.get("per_day", [])
+    
+    for user in profiles:
+        uid = user["user_id"]
+        hc = user.get("hard_constraints", {})
+        latest_rest = hc.get("latest_rest_time")
+        no_early = hc.get("no_consecutive_early_start")
+        must_highlight = hc.get("must_have_highlight_slots")
+        sp = user.get("strong_preferences", {})
+        wants_golden = sp.get("photography_golden_hour", 0) >= 0.7
+        
+        early_start_count = 0
+        highlight_count = 0
+        golden_hour_met = False
+        
+        for day_idx, day_plan in enumerate(per_day):
+            # 1. latest_rest_time -> SOFT (judge by end_time, skip overnight scenarios)
+            night = day_plan.get("night")
+            if night and latest_rest:
+                end_str = night.get("end_time") or night.get("time")
+                if end_str:
+                    try:
+                        et = datetime.strptime(end_str, "%H:%M")
+                        lt = datetime.strptime(latest_rest, "%H:%M")
+                        # Skip overnight-friendly profiles (latest_rest <= 06:00 means they accept late nights)
+                        if lt.hour > 6 and et > lt:
+                            violations.append({
+                                "user_id": uid,
+                                "day": day_idx + 1,
+                                "type": "rest_time_violation",
+                                "severity": "soft",
+                                "evidence": f"夜间活动结束时间 {end_str} 晚于最晚休息 {latest_rest}"
+                            })
+                    except Exception:
+                        pass
+
+            # 2. no_consecutive_early_start -> SOFT
+            morning = day_plan.get("morning")
+            if morning:
+                start_str = morning.get("start_time") or morning.get("time") or "09:00"
+                if start_str < "09:00":
+                    early_start_count += 1
+                else:
+                    early_start_count = 0
+                
+                if no_early and early_start_count >= 2:
+                    violations.append({
+                        "user_id": uid,
+                        "day": day_idx + 1,
+                        "type": "consecutive_early_start_violation",
+                        "severity": "soft",
+                        "evidence": "连续两天早于 09:00 出发"
+                    })
+
+            # 3. must_have_highlight_slots (count) - HARD if explicitly set
+            # 4. photography_golden_hour (17:00-19:00) - SOFT (from strong_preferences)
+            for slot in ["morning", "lunch", "afternoon", "dinner", "night"]:
+                act = day_plan.get(slot)
+                if not act: continue
+                
+                # Check highlight (beneficiaries list)
+                if uid in act.get("beneficiaries", []):
+                    highlight_count += 1
+                
+                # Check golden hour (afternoon or dinner usually covers 17-19)
+                start_str = act.get("start_time") or act.get("time") or ""
+                if wants_golden and not golden_hour_met:
+                    # Heuristic: if it's afternoon and starts after 15:00 or dinner starts before 19:00
+                    if (slot == "afternoon" and start_str >= "15:00") or (slot == "dinner" and start_str <= "19:00"):
+                        golden_hour_met = True
+
+        # Final checks after all days
+        if must_highlight and isinstance(must_highlight, int) and highlight_count < must_highlight:
+             violations.append({
+                "user_id": uid,
+                "type": "insufficient_highlights_violation",
+                "severity": "hard",
+                "evidence": f"全程高光活动数 {highlight_count} 低于要求 {must_highlight}"
+            })
+        
+        if wants_golden and not golden_hour_met:
+            violations.append({
+                "user_id": uid,
+                "type": "golden_hour_missed_violation",
+                "severity": "soft",
+                "evidence": "全程未安排黄金时段摄影独立时段"
+            })
+            
+    return violations
+
+
 def aggregate_scores(
     state: TripState, 
     llm_scores: Dict[str, Any], 
-    hard_violations: List[Dict[str, Any]]
+    hard_violations: List[Dict[str, Any]],
+    soft_violations: List[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     profiles = state.get("profiles", [])
     per_user_results = []
     s_values = []
+    soft_violations = soft_violations or []
     
     day_states = llm_scores.get("day_states", {})
     highlight_counts = llm_scores.get("highlight_count", {})
     
-    # Map user_id to their hard violations
-    user_violations = {}
+    # Group hard violations by user_id; "all" violations are tracked separately
+    user_hard = {}
+    group_hard = []
     for v in hard_violations:
-        uid = v["user_id"]
-        if uid not in user_violations: user_violations[uid] = []
-        user_violations[uid].append(v)
+        uid = v.get("user_id")
+        if uid == "all":
+            group_hard.append(v)
+        elif uid:
+            user_hard.setdefault(uid, []).append(v)
+
+    # Group soft violations by user_id
+    user_soft = {}
+    for v in soft_violations:
+        uid = v.get("user_id")
+        if uid and uid != "all":
+            user_soft.setdefault(uid, []).append(v)
+
+    # Group-level penalty (applied to every user) for "all" violations like time_window
+    # Each "all" violation deducts 8 from every user, capped at 20
+    group_penalty = min(20, 8 * len(group_hard)) if group_hard else 0
 
     for user_data in llm_scores.get("per_user_scores", []):
         uid = user_data["user_id"]
@@ -243,14 +362,27 @@ def aggregate_scores(
             penalties += 10
             penalty_details.append("全程无高光 (-10)")
             
-        # Hard violations (Layer A)
-        if uid in user_violations:
-            penalties += 50 # Heavy penalty for hard violations
-            penalty_details.append(f"存在 {len(user_violations[uid])} 项硬约束违反 (-50)")
+        # Hard violations: tiered penalty (1=-25, 2=-35, 3+=-40)
+        hard_count = len(user_hard.get(uid, []))
+        if hard_count > 0:
+            hard_penalty = min(40, 25 + 10 * (hard_count - 1))
+            penalties += hard_penalty
+            penalty_details.append(f"硬违反 {hard_count} 项 (-{hard_penalty})")
+
+        # Soft violations: capped at 15 (5 per item)
+        soft_count = len(user_soft.get(uid, []))
+        if soft_count > 0:
+            soft_penalty = min(15, 5 * soft_count)
+            penalties += soft_penalty
+            penalty_details.append(f"软偏好未满足 {soft_count} 项 (-{soft_penalty})")
+
+        # Group-level penalty (e.g. time_window violations affecting all)
+        if group_penalty > 0:
+            penalties += group_penalty
+            penalty_details.append(f"全组共享违反 (-{group_penalty})")
             
         final_user_score = max(0, base_score - penalties)
-        if uid in user_violations:
-            final_user_score = 0 # Force 0 if hard violation exists
+        # No more force-zero — penalty cap already protects the floor
             
         s_values.append(final_user_score)
         per_user_results.append({
@@ -271,20 +403,25 @@ def aggregate_scores(
     # Fairness (simplified)
     fairness = 100 - (max(s_values) - min(s_values)) if s_values else 100
     
-    final_group_score = (0.4 * s_avg + 0.4 * s_min + 0.2 * fairness)
+    # Re-tuned formula: avoid single low-score user from collapsing the whole plan
+    final_group_score = (0.5 * s_avg + 0.25 * s_min + 0.25 * fairness)
     
-    # Status
+    # Status: only severity=hard hard_violations push to Reject; otherwise HumanReview/Pass
     status = "Pass"
     reasons = []
-    if hard_violations:
+    real_hard = [v for v in hard_violations if v.get("severity", "hard") == "hard"]
+    if real_hard:
         status = "Reject"
-        reasons.append("存在硬约束违反")
-    elif s_min < 60:
+        reasons.append(f"存在 {len(real_hard)} 条硬约束违反")
+    elif s_min < 40:
         status = "Reject"
-        reasons.append(f"最低个人满意度({round(s_min,1)})低于 60")
-    elif s_min < 70:
+        reasons.append(f"最低个人满意度({round(s_min,1)}) 低于 40 (不可接受)")
+    elif s_min < 60 or final_group_score < 70:
         status = "HumanReview"
-        reasons.append("最低个人满意度处于人工审核区间")
+        if s_min < 60:
+            reasons.append(f"最低个人满意度({round(s_min,1)}) 处于人工审核区间")
+        if final_group_score < 70:
+            reasons.append(f"团队总分({round(final_group_score,1)}) 低于 70")
 
     return {
         "final_group_score": round(final_group_score, 2),
@@ -319,22 +456,33 @@ def run_evaluation_pipeline(state: TripState, llm_scores: Dict[str, Any]) -> Dic
             },
             "per_user": [],
             "hard_violations": [],
+            "soft_violations": [],
             "compensation_audit": [],
             "compensation_metric": None
         }
 
     # 1. Layer A: Quantification
-    v_intensity = analyze_intensity(proposal, profiles)
-    v_budget = analyze_budget(proposal, profiles)
-    v_diet = analyze_dietary_safety(proposal, profiles)
-    v_time = analyze_time_window(proposal, state.get("poi_pool", {}))
-    hard_violations = v_intensity + v_budget + v_diet + v_time
+    # Strict-hard: intensity, budget, diet, time_window (default severity=hard)
+    v_intensity = [{**v, "severity": "hard", "type": v.get("type", "intensity_violation")} for v in analyze_intensity(proposal, profiles)]
+    v_budget = [{**v, "severity": "hard", "type": v.get("type", "budget_violation")} for v in analyze_budget(proposal, profiles)]
+    v_diet = [{**v, "severity": "hard", "type": v.get("type", "dietary_violation")} for v in analyze_dietary_safety(proposal, profiles)]
+    v_time = analyze_time_window(proposal, state.get("poi_pool", {}))  # already has severity in modified version below
+    v_time = [{**v, "severity": "hard"} for v in v_time]
+    
+    # Mixed-severity: lifestyle (already carries `severity` field per item)
+    v_lifestyle = analyze_lifestyle(proposal, profiles)
+    
+    # Split into hard / soft
+    all_violations = v_intensity + v_budget + v_diet + v_time + v_lifestyle
+    hard_violations = [v for v in all_violations if v.get("severity", "hard") == "hard"]
+    soft_violations = [v for v in all_violations if v.get("severity", "hard") == "soft"]
     
     # 2. Layer C: Aggregation
-    report = aggregate_scores(state, llm_scores, hard_violations)
+    report = aggregate_scores(state, llm_scores, hard_violations, soft_violations)
     
     # 3. Add drill-downs
     report["hard_violations"] = hard_violations
+    report["soft_violations"] = soft_violations
     report["compensation_audit"] = llm_scores.get("compensation_audit", [])
     
     # Compensation metric

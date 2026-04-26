@@ -87,6 +87,37 @@ def create_trip(payload: CreateTripRequest):
     }
     final_state = run_full(initial_state)
     
+    # Retry logic if Reject or score < 70
+    max_retries = 2
+    retry_count = 0
+    
+    def should_retry(st: TripState) -> bool:
+        report = st.get("evaluation_report") or {}
+        scores = st.get("scores") or {}
+        score = scores.get("final") or report.get("final_group_score") or 0
+        is_reject = report.get("status") == "Reject"
+        
+        # Skip unrecoverable hard violations
+        hard_violations = report.get("hard_violations") or []
+        unrecoverable = {"budget_impossible", "no_food_poi"}
+        if any(v.get("type") in unrecoverable for v in hard_violations):
+            return False
+            
+        return is_reject or score < 70
+
+    while should_retry(final_state) and retry_count < max_retries:
+        retry_count += 1
+        score = (final_state.get("scores") or {}).get("final", 0)
+        status = (final_state.get("evaluation_report") or {}).get("status", "?")
+        
+        # Ensure we have a trace list to append to
+        current_trace = final_state.get("agent_trace", [])
+        current_trace.append(f"[retry] 方案质量不达标 (status={status}, score={score})，启动第 {retry_count}/{max_retries} 轮重试...")
+        
+        # Pass the trace back to the next attempt
+        initial_state["agent_trace"] = current_trace
+        final_state = run_full(initial_state)
+
     # Set baseline and initial history
     if final_state.get("proposal"):
         final_state["baseline_proposal"] = final_state["proposal"]
@@ -97,6 +128,11 @@ def create_trip(payload: CreateTripRequest):
             "triggered_by_event_ids": []
         }
         final_state["proposal_history"] = [snapshot]
+    
+    # Mark not_recommended when status is Reject OR final score < 70
+    report = final_state.get("evaluation_report") or {}
+    score = (final_state.get("scores") or {}).get("final") or report.get("final_group_score") or 0
+    final_state["not_recommended"] = (report.get("status") == "Reject") or (score < 70)
         
     save_trip(trip_id, final_state)
     return final_state
@@ -181,6 +217,11 @@ def post_event(trip_id: str, payload: EventRequest):
             "triggered_by_event_ids": [event_id]
         }
         final_state.setdefault("proposal_history", []).append(snapshot)
+
+    # Mark not_recommended when status is Reject OR final score < 70
+    report = final_state.get("evaluation_report") or {}
+    score = (final_state.get("scores") or {}).get("final") or report.get("final_group_score") or 0
+    final_state["not_recommended"] = (report.get("status") == "Reject") or (score < 70)
 
     save_trip(trip_id, final_state)
     return final_state

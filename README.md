@@ -56,7 +56,8 @@ python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 # 默认 USE_MOCK=true，不需要 Qwen Key 也能跑
-uvicorn app.main:app --reload --port 8000
+# 排除 data 目录的热重载，防止持久化 JSON 写入导致无限循环重启
+uvicorn app.main:app --reload --reload-dir app --reload-exclude "app/data/*" --port 8000
 ```
 
 ### 前端

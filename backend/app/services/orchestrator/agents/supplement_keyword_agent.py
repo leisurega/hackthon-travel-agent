@@ -25,7 +25,7 @@ SYS_SUPPLEMENT = """你是餐饮关键词反思器。
 }
 """
 
-def run(state: TripState, city: str, existing_food: List[str], target_count: int) -> List[str]:
+def run(state: TripState, city: str, existing_food: List[str], target_count: int, trace: Optional[List[str]] = None) -> List[str]:
     profiles = state.get("profiles", [])
     user_prompt = (
         f"城市：{city}\n"
@@ -41,6 +41,10 @@ def run(state: TripState, city: str, existing_food: List[str], target_count: int
             user=user_prompt,
             mock_file="supplement_kw_mock.json",
         )
-        return resp.get("new_food_keywords", [])
+        new_kws = resp.get("new_food_keywords", [])
+        if trace is not None:
+            reasoning = resp.get("reasoning", "")
+            trace.append(f"[supplement] {city} 反思: {reasoning[:60]}... → 新增关键词 {new_kws}")
+        return new_kws
     except Exception:
         return []

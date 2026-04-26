@@ -100,6 +100,21 @@ const MemberPool: React.FC = () => {
     setActiveProfile(newProfile);
   };
 
+  const removeNestedKey = (path: string, keyToRemove: string) => {
+    const newProfile = { ...activeProfile };
+    const keys = path.split('.');
+    let current = newProfile;
+    for (let i = 0; i < keys.length; i++) {
+      current[keys[i]] = { ...current[keys[i]] };
+      if (i === keys.length - 1) {
+        delete current[keys[i]][keyToRemove];
+      } else {
+        current = current[keys[i]];
+      }
+    }
+    setActiveProfile(newProfile);
+  };
+
   if (loading) return <div className="p-10">加载中...</div>;
 
   return (
@@ -218,9 +233,9 @@ const MemberPool: React.FC = () => {
                       onChange={e => setActiveProfile({...activeProfile, protection_level: e.target.value})}
                       className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-sm outline-none"
                     >
-                      <option value="low">低保护 (体力强)</option>
-                      <option value="medium">中保护 (普通)</option>
-                      <option value="high">高保护 (体力弱/红线)</option>
+                      <option value="low">体力强 (低保护)</option>
+                      <option value="medium">体力中 (中保护)</option>
+                      <option value="high">体力弱 (高保护/红线)</option>
                     </select>
                   </div>
                   <div className="space-y-1">
@@ -231,14 +246,6 @@ const MemberPool: React.FC = () => {
                       onChange={e => updateNested('hard_constraints.walk_km_max', parseFloat(e.target.value))}
                       className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-sm"
                     />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="checkbox" id="midday_rest"
-                      checked={activeProfile.hard_constraints.midday_rest}
-                      onChange={e => updateNested('hard_constraints.midday_rest', e.target.checked)}
-                    />
-                    <label htmlFor="midday_rest" className="text-sm text-gray-600">必须午休</label>
                   </div>
                 </div>
               </section>
@@ -342,10 +349,18 @@ const MemberPool: React.FC = () => {
                     'quiet_rest_time': '安静休息'
                   };
                   return (
-                    <div key={key} className="space-y-1">
+                    <div key={key} className="space-y-1 group/item relative">
                       <div className="flex justify-between">
                         <label className="text-sm text-gray-600">{labelMap[key] || key}</label>
-                        <span className="text-sm font-bold text-purple-600">{Math.round(val * 100)}%</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-purple-600">{Math.round(val * 100)}%</span>
+                          <button 
+                            onClick={() => removeNestedKey('strong_preferences', key)}
+                            className="opacity-0 group-hover/item:opacity-100 text-gray-300 hover:text-red-500 transition-all"
+                          >
+                            ×
+                          </button>
+                        </div>
                       </div>
                       <input 
                         type="range" min="0" max="100" step="5"
@@ -392,6 +407,47 @@ const MemberPool: React.FC = () => {
                   className="px-3 py-1 border border-dashed border-red-200 text-red-400 rounded-lg text-sm"
                 >
                   + 添加忌口
+                </button>
+              </div>
+            </section>
+
+            {/* Anti Preferences */}
+            <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <span className="w-6 h-6 bg-gray-100 text-gray-600 rounded flex items-center justify-center text-xs">A</span>
+                反感项强度 (0.0 - 1.0)
+              </h3>
+              <div className="grid grid-cols-2 gap-x-10 gap-y-4">
+                {Object.entries(activeProfile.anti_preferences || {}).map(([key, val]: [string, any]) => (
+                  <div key={key} className="space-y-1 group/item relative">
+                    <div className="flex justify-between">
+                      <label className="text-sm text-gray-600">{key}</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-gray-600">{Math.round(val * 100)}%</span>
+                        <button 
+                          onClick={() => removeNestedKey('anti_preferences', key)}
+                          className="opacity-0 group-hover/item:opacity-100 text-gray-300 hover:text-red-500 transition-all"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                    <input 
+                      type="range" min="0" max="100" step="5"
+                      value={val * 100}
+                      onChange={e => updateNested(`anti_preferences.${key}`, parseInt(e.target.value) / 100)}
+                      className="w-full h-1.5 bg-gray-100 rounded-full appearance-none cursor-pointer accent-gray-600"
+                    />
+                  </div>
+                ))}
+                <button 
+                  onClick={() => {
+                    const key = prompt('输入反感项 key (如: crowds)');
+                    if (key) updateNested(`anti_preferences.${key}`, 0.5);
+                  }}
+                  className="text-xs text-gray-600 font-bold hover:underline text-left"
+                >
+                  + 添加反感维度
                 </button>
               </div>
             </section>

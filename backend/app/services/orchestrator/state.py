@@ -52,20 +52,13 @@ class UserProfile(TypedDict):
     core_story: Optional[str]  # "画像背景描述"
     
     # 6-dimension structure
-    hard_constraints: dict     # {budget_max: 5000, walk_km_max: 6.0, midday_rest: true, ...}
+    hard_constraints: dict     # {budget_max: 5000, walk_km_max: 6.0, dietary: [], ...}
     strong_preferences: dict   # {photography: 1.0, museum: 0.8, ...} (0-1 range)
     anti_preferences: dict     # {crowds: 1.0, coriander: 1.0, ...} (0-1 range)
     negotiable_range: dict     # {museum_hours: [0, 2], ...}
     
     scoring_weights: dict      # {T: 0.15, B: 0.15, P: 0.20, I: 0.25, F: 0.15, S: 0.10}
     compensation_preference: List[CompensationPreference]
-    
-    # Deprecated / Legacy fields (kept for migration)
-    trip_goal: Optional[List[str]]
-    key_tags: Optional[List[str]]
-    radar: Optional[List[int]]
-    completeness: Optional[int]
-    confidence: Optional[int]
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +91,9 @@ class ConflictSummary(TypedDict):
 # ---------------------------------------------------------------------------
 
 class ActivityBlock(TypedDict, total=False):
-    time: str                  # "09:00"
+    start_time: str            # "09:00"
+    end_time: str              # "12:00"
+    time: str                  # Legacy field, same as start_time
     title: str                 # "故宫博物院"
     kind: str                  # "museum" | "walk" | "photo" | "restaurant" | "shopping" | "transit" | ...
     is_indoor: bool
@@ -106,6 +101,7 @@ class ActivityBlock(TypedDict, total=False):
     beneficiaries: List[str]   # ["A","C"] -- users this activity primarily satisfies
     cost: int                  # CNY per person (approx)
     poi_id: str                # optional, references an entry in state["poi_pool"]
+    selection_rationale: str   # Why this POI was chosen
 
 
 class DayPlan(TypedDict):
@@ -159,6 +155,7 @@ class Score(TypedDict):
 class Explanations(TypedDict):
     recommendation_reasons: List[str]         # "满足核心偏好，冲突较少"
     per_user_impact: List[PerUserScore]       # same shape as Score.per_user
+    trade_off_summary: List[str]             # List of compromises made
 
 
 # ---------------------------------------------------------------------------

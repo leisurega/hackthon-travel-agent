@@ -47,7 +47,8 @@ def enrich_poi(poi: Dict[str, Any], raw_item: Optional[Dict[str, Any]] = None) -
     elif "步行街" in name or "河坊街" in name:
         walk_km = 2.5
     
-    poi["walk_km_estimate"] = walk_km
+    poi["visit_walk_km"] = walk_km
+    poi["walk_km_estimate"] = walk_km # Keep for back-compat
 
     # 2. duration_min
     duration = 60 # Default

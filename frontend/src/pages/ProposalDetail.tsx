@@ -2,13 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTrip } from '../contexts/TripContext';
 import { tripApi } from '../api/trip';
+import { humanizeMemberRefs } from '../utils/humanizeMemberRefs';
 
-const SLOT_META: { key: 'morning' | 'lunch' | 'afternoon' | 'dinner' | 'night'; label: string; defaultIcon: string }[] = [
-  { key: 'morning',   label: '早 09:00', defaultIcon: '🌅' },
-  { key: 'lunch',     label: '午 12:00', defaultIcon: '🍽' },
-  { key: 'afternoon', label: '下午 15:00', defaultIcon: '🚶' },
-  { key: 'dinner',    label: '晚 18:00', defaultIcon: '🍜' },
-  { key: 'night',     label: '夜 20:00', defaultIcon: '🌃' },
+const SLOT_META: { key: 'morning' | 'lunch' | 'afternoon' | 'dinner' | 'night'; periodLabel: string; defaultIcon: string }[] = [
+  { key: 'morning',   periodLabel: '早', defaultIcon: '🌅' },
+  { key: 'lunch',     periodLabel: '午', defaultIcon: '🍽' },
+  { key: 'afternoon', periodLabel: '下午', defaultIcon: '🚶' },
+  { key: 'dinner',    periodLabel: '晚', defaultIcon: '🍜' },
+  { key: 'night',     periodLabel: '夜', defaultIcon: '🌃' },
 ];
 
 const iconFor = (kind?: string, is_indoor?: boolean) => {
@@ -23,16 +24,13 @@ const iconFor = (kind?: string, is_indoor?: boolean) => {
   }
 };
 
-const truncate = (text: string, max = 20) => {
-  if (!text) return '';
-  return text.length > max ? text.slice(0, max) + '…' : text;
-};
-
 const ProposalDetail: React.FC = () => {
   const { tripId, tripData, refreshTrip, setTripData } = useTrip();
   const [replanning, setReplanning] = useState(false);
   const [adopting, setAdopting] = useState(false);
   const [showEval, setShowEval] = useState(false);
+  const [showRationale, setShowRationale] = useState(false);
+  const [activeRationale, setActiveRationale] = useState<string | null>(null);
 
   const handleReplan = async () => {
     if (!tripId) return;
@@ -77,11 +75,14 @@ const ProposalDetail: React.FC = () => {
   };
 
   const evalReport = tripData?.evaluation_report || {};
-  const perUserImpact = tripData?.explanations?.per_user_impact || [];
+  const explanations = tripData?.explanations || {};
+  const perUserImpact = explanations.per_user_impact || [];
+  const tradeOffs = explanations.trade_off_summary || [];
   const days = tripData?.days || proposal.per_day?.length || 7;
   const perDay = proposal.per_day || [];
   const cityDaysText = proposal.city_days?.length > 0 ? proposal.city_days?.map((d: number) => `${d}天`).join(' / ') : '';
   const adoptedAt: string | undefined = tripData?.adopted_at;
+  const notRecommended = tripData?.not_recommended;
 
   const profileById = useMemo(() => Object.fromEntries(
     (tripData?.profiles || []).map((p: any) => [p.user_id, p])
@@ -112,6 +113,23 @@ const ProposalDetail: React.FC = () => {
   return (
     <div className="p-10 h-full overflow-y-auto bg-gray-50">
       <div className="max-w-6xl mx-auto">
+        {notRecommended && (
+          <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <div className="text-red-800 font-bold">该方案存在硬性违反，不建议直接采纳</div>
+                <div className="text-red-600 text-xs mt-0.5">
+                  原因: {evalReport.status_reasons?.join('; ') || '综合评分过低或存在红线违反'}
+                </div>
+              </div>
+            </div>
+            <div className="text-red-400 text-xs font-bold uppercase tracking-widest px-3 py-1 border border-red-200 rounded-lg">
+              Not Recommended
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-end mb-10">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -126,6 +144,14 @@ const ProposalDetail: React.FC = () => {
           </div>
           <div className="flex flex-col items-end gap-2">
           <div className="flex gap-4">
+            <button 
+              onClick={() => setShowRationale(!showRationale)}
+              className={`px-6 py-3 border-2 rounded-2xl font-bold transition-all flex items-center gap-2 ${
+                showRationale ? 'bg-amber-600 border-amber-600 text-white' : 'border-amber-100 text-amber-600 hover:bg-amber-50'
+              }`}
+            >
+              <span>ℹ️</span> {showRationale ? '隐藏决策依据' : '查看决策依据'}
+            </button>
             <button 
               onClick={() => setShowEval(!showEval)}
               className={`px-6 py-3 border-2 rounded-2xl font-bold transition-all flex items-center gap-2 ${
@@ -150,6 +176,65 @@ const ProposalDetail: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {showRationale && (
+          <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-300">
+            <section className="bg-white p-8 rounded-3xl border-2 border-amber-500 shadow-xl shadow-amber-100 space-y-8">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-black text-amber-800 flex items-center gap-2">
+                  <span className="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-sm">ℹ️</span>
+                  方案决策依据 (Rationale)
+                </h3>
+                <button onClick={() => setShowRationale(false)} className="text-amber-400 hover:text-amber-600 text-2xl">×</button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-8">
+                {/* 1. 冲突与避让 */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> 冲突识别与证据
+                  </h4>
+                  <div className="space-y-2">
+                    {tripData?.conflicts_v2?.dimension_conflicts?.map((c: any, i: number) => (
+                      <div key={i} className="p-3 bg-orange-50 rounded-xl border border-orange-100 text-[10px]">
+                        <div className="font-bold text-orange-800 mb-1">{c.dimension} · {c.tier}</div>
+                        <div className="text-orange-700 mb-1">{humanizeMemberRefs(c.summary, profileById)}</div>
+                        <div className="text-orange-400 italic">证据: {humanizeMemberRefs(c.evidence || '通用规则', profileById)}</div>
+                        {c.suggestion && <div className="text-orange-600 mt-1">建议: {humanizeMemberRefs(c.suggestion, profileById)}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. 关键词推理 */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span> 搜索关键词推理
+                  </h4>
+                  <div className="p-4 bg-teal-50 rounded-2xl border border-teal-100 text-[10px] text-teal-800 leading-relaxed">
+                    {humanizeMemberRefs(tripData?.keywords?.reasoning, profileById) || '基于全员偏好与黑名单自动提取。'}
+                  </div>
+                </div>
+
+                {/* 3. 权衡总结 */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 团队权衡 (Trade-offs)
+                  </h4>
+                  <div className="space-y-2">
+                    {tradeOffs.length === 0 ? (
+                      <div className="text-[10px] text-gray-400 p-4 border border-dashed rounded-xl text-center">无明显权衡记录</div>
+                    ) : tradeOffs.map((t: string, i: number) => (
+                      <div key={i} className="p-3 bg-amber-50 rounded-xl border border-amber-100 text-[10px] text-amber-800">
+                        {humanizeMemberRefs(t, profileById)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
 
         {showEval && evalReport && (
           <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-300">
@@ -251,7 +336,9 @@ const ProposalDetail: React.FC = () => {
                             }`}>{a.fulfillment === 'fulfilled' ? '已满足' : a.fulfillment === 'partial' ? '部分满足' : '未满足'}</span>
                           </div>
                           <div className="text-gray-500 mb-1">牺牲偏好: {prefLabelMap[a.missed_strong_preference] || a.missed_strong_preference}</div>
-                          <div className="text-blue-600 font-medium">证据: 第 {a.fulfilled_by?.day} 天 {a.fulfilled_by?.title}</div>
+                          <div className="text-blue-600 font-medium">证据: 第 {a.fulfilled_by?.day ?? '?'} 天 {a.fulfilled_by?.title || '未指定活动'}</div>
+                          {a.reason && <div className="text-gray-400 mt-1 italic">理由: {humanizeMemberRefs(a.reason, profileById)}</div>}
+                          {a.matched_compensation_rule && <div className="text-gray-400 mt-1">规则: {humanizeMemberRefs(a.matched_compensation_rule, profileById)}</div>}
                         </div>
                       );
                     })}
@@ -267,7 +354,7 @@ const ProposalDetail: React.FC = () => {
                     {evalReport.per_user?.map((u: any) => (
                       <div key={u.user_id} className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-[10px]">
                         <div className="flex justify-between mb-2">
-                          <span className="font-bold text-gray-700">{u.display_name}</span>
+                          <span className="font-bold text-gray-700">{profileById[u.user_id]?.display_name || u.display_name}</span>
                           <span className="font-black text-blue-600">{u.final_satisfaction}</span>
                         </div>
                         <div className="grid grid-cols-6 gap-1 mb-2">
@@ -284,7 +371,7 @@ const ProposalDetail: React.FC = () => {
                           })}
                         </div>
                         {u.penalty_details?.map((p: string, i: number) => (
-                          <div key={i} className="text-red-400 text-[8px] italic">{p}</div>
+                          <div key={i} className="text-red-400 text-[8px] italic">{humanizeMemberRefs(p, profileById)}</div>
                         ))}
                       </div>
                     ))}
@@ -334,9 +421,14 @@ const ProposalDetail: React.FC = () => {
             </section>
             
             <section className="space-y-6">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <span className="w-1 h-5 bg-blue-600 rounded-full"></span> 每日安排
-              </h3>
+              <div className="mb-1">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-blue-600 rounded-full"></span> 每日安排
+                </h3>
+                <p className="text-[11px] text-gray-400 mt-1 pl-2">
+                  卡片之间的空档未单独编排行程，一般为交通、用餐或休整等弹性时间，不代表系统遗漏。
+                </p>
+              </div>
               {perDay.length === 0 ? (
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 text-sm text-gray-400">方案生成中...</div>
               ) : perDay.map((dayPlan: any) => (
@@ -360,13 +452,34 @@ const ProposalDetail: React.FC = () => {
                         const poi = block.poi_id ? poiById[block.poi_id] : undefined;
                         return (
                           <div key={slot.key} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <div className="text-[10px] font-bold text-gray-400 mb-2 uppercase">
-                              {slot.label}{block.time ? ` · ${block.time}` : ''}
+                            <div className="text-[10px] font-bold text-gray-500 mb-2">
+                              {slot.periodLabel}
+                              {block.start_time
+                                ? ` ${block.start_time}-${block.end_time}`
+                                : block.time
+                                  ? ` ${block.time}`
+                                  : ''}
                             </div>
-                            <div className="text-xs font-bold text-gray-800 mb-3 flex items-center gap-1.5">
-                              <span>{iconFor(block.kind, block.is_indoor) || slot.defaultIcon}</span>
-                              <span className="truncate" title={block.title}>{block.title || '—'}</span>
+                            <div className="text-xs font-bold text-gray-800 mb-3 flex items-start justify-between gap-1.5 group/title">
+                              <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                                <span className="shrink-0 leading-snug">{iconFor(block.kind, block.is_indoor) || slot.defaultIcon}</span>
+                                <span className="line-clamp-2 break-words leading-snug" title={block.title}>{block.title || '—'}</span>
+                              </div>
+                              {block.selection_rationale && (
+                                <button 
+                                  onClick={() => setActiveRationale(activeRationale === `${dayPlan.day}-${slot.key}` ? null : `${dayPlan.day}-${slot.key}`)}
+                                  className="text-[10px] text-gray-300 hover:text-amber-500 transition-colors"
+                                  title="查看选择依据"
+                                >
+                                  ℹ️
+                                </button>
+                              )}
                             </div>
+                            {activeRationale === `${dayPlan.day}-${slot.key}` && (
+                              <div className="mb-3 p-2 bg-amber-50 border border-amber-100 rounded-lg text-[9px] text-amber-800 animate-in zoom-in-95 duration-200">
+                                {humanizeMemberRefs(block.selection_rationale, profileById)}
+                              </div>
+                            )}
                             {poi && (
                               <div className="space-y-1 mb-3 text-[10px] text-gray-500">
                                 {poi.rating > 0 && (
@@ -375,16 +488,10 @@ const ProposalDetail: React.FC = () => {
                                     <span className="font-bold text-amber-600">{poi.rating.toFixed(1)}</span>
                                   </div>
                                 )}
-                                {poi.walk_km_estimate && (
-                                  <div className="flex items-center gap-1" title={`预计步行 ${poi.walk_km_estimate}km`}>
-                                    <span>🚶</span>
-                                    <span className="font-bold text-orange-600">{poi.walk_km_estimate}km</span>
-                                  </div>
-                                )}
-                                {poi.avg_cost > 0 && (
-                                  <div className="flex items-center gap-1" title={`人均 ¥${poi.avg_cost}`}>
+                                { (poi.avg_cost > 0 || poi.cost_estimate > 0) && (
+                                  <div className="flex items-center gap-1" title={`人均 ¥${poi.avg_cost || poi.cost_estimate}`}>
                                     <span>💰</span>
-                                    <span className="font-bold text-gray-700">¥{poi.avg_cost}</span>
+                                    <span className="font-bold text-gray-700">¥{poi.avg_cost || poi.cost_estimate}</span>
                                   </div>
                                 )}
                               </div>
@@ -438,13 +545,13 @@ const ProposalDetail: React.FC = () => {
                     </div>
                     <div className="space-y-2 pl-10">
                       <div className="text-[10px] text-gray-600 leading-relaxed">
-                        <span className="font-bold text-blue-500 mr-1">满足点：</span> {impact.met?.[0] || '—'}
+                        <span className="font-bold text-blue-500 mr-1">满足点：</span> {humanizeMemberRefs(impact.met?.[0], profileById) || '—'}
                       </div>
                       <div className="text-[10px] text-gray-600 leading-relaxed">
-                        <span className="font-bold text-orange-500 mr-1">妥协点：</span> {impact.gave_up?.[0] || '—'}
+                        <span className="font-bold text-orange-500 mr-1">妥协点：</span> {humanizeMemberRefs(impact.gave_up?.[0], profileById) || '—'}
                       </div>
                       <div className="text-[10px] text-gray-600 leading-relaxed">
-                        <span className="font-bold text-green-500 mr-1">补偿点：</span> {impact.compensation?.[0] || '—'}
+                        <span className="font-bold text-green-500 mr-1">补偿点：</span> {humanizeMemberRefs(impact.compensation?.[0], profileById) || '—'}
                       </div>
                     </div>
                   </div>

@@ -35,6 +35,7 @@ def run(state: TripState) -> TripState:
     state["explanations"] = {
         "recommendation_reasons": response["recommendation_reasons"],
         "per_user_impact": response["per_user_impact"],
+        "trade_off_summary": response.get("trade_off_summary", []),
     }
     elapsed = int((time.time() - started) * 1000)
     trace.append(

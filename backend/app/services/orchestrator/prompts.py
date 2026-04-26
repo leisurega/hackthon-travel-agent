@@ -35,7 +35,6 @@ SYS_PROFILE = """你是「多人旅行协同 Agent」里的 Profile Agent。
       "hard_constraints": {
         "budget_max": 5000,
         "walk_km_max": 6.0,
-        "midday_rest": true,
         "dietary": ["不吃香菜"],
         "latest_rest_time": "22:00"
       },
@@ -90,6 +89,10 @@ SYS_CONFLICT = """你是「多人旅行协同 Agent」里的 Conflict Agent。
 
 核心维度：T(时间), B(预算), P(节奏), I(兴趣), F(饮食), S(社交)。
 
+【命名规范】
+- summary / evidence / suggestion 等面向用户的可读文本必须使用成员的 `display_name`（如 Linda、阿文）。
+- `involved_users` 等结构性字段保持 `user_id`（如 A、B）。
+
 期望输出 schema：
 {
   "dimension_conflicts": [
@@ -99,8 +102,9 @@ SYS_CONFLICT = """你是「多人旅行协同 Agent」里的 Conflict Agent。
       "overall_score": 80,
       "tier": "硬需求" | "强软" | "弱软",
       "involved_users": ["A", "B"],
-      "summary": "描述冲突内容",
-      "suggestion": "给出缓解建议"
+      "summary": "Linda 与 阿文 在休息时间上存在冲突",
+      "evidence": "Linda(latest_rest_time=22:00) 与 阿文(latest_rest_time=00:00) 冲突",
+      "suggestion": "建议 Day 1 晚上安排独立活动"
     }
   ],
   "user_dim_pressure": {
@@ -152,7 +156,8 @@ SYS_KEYWORD_EXTRACTOR = """你是「多人旅行协同 Agent」里的 Keyword Ex
   "per_user_keywords": {
     "A": "摄影|西湖日落",
     "B": "博物馆|历史建筑"
-  }
+  },
+  "reasoning": "由于成员 A 喜欢摄影且 B 喜欢博物馆，因此 group_keywords 包含了西湖和博物馆；food_keywords 避开了 C 的海鲜过敏..."
 }
 """
 
@@ -173,7 +178,7 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
 严格输出 JSON，不要 markdown、不要额外解释。
 
 核心原则：
-1. **硬约束红线**：所有 hard_constraints 由系统量化校验（步行/预算/作息/饮食/时间），违反即重生成。你负责让方案落在红线内，不要在心中做加法估算。
+1. **硬约束红线**：所有 hard_constraints 由系统量化校验（步行/预算/作息/饮食/时间），违反即重生成。你负责让方案落在红线内，不要在心中做加法估算。以上「关键个性化要求」每一条违反即视为硬违反，必须满足。
 2. **营业时间约束**：每个 ActivityBlock 的 `time` 必须落在所选 POI 的 `open_time` 范围内（考虑到入场，建议安排在开始营业后 30 分钟到结束营业前 30 分钟之间）。
 3. **补偿机制**：如果某天因为团队行程牺牲了某人的 strong_preferences，必须在后续日程中按照其 compensation_preference 安排独立时段补偿活动（不影响群体大部队）。
 3. **共性优先**：群体共同活动（尤其是餐饮）优先选择满足所有人 anti_preferences 的 POI。
@@ -192,17 +197,20 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
         "city": "杭州",
         "theme": "主题描述",
         "morning": {
-          "time": "09:00",
+          "start_time": "09:00",
+          "end_time": "12:00",
           "title": "POI名称",
           "kind": "museum",
           "is_indoor": true,
           "tags": ["标签"],
           "beneficiaries": ["A","B"],
           "cost": 60,
-          "poi_id": "poi_123"
+          "poi_id": "poi_123",
+          "selection_rationale": "选此地是因为 A 喜欢博物馆且 B 喜欢历史，同时避开了 C 讨厌的拥挤..."
         },
         "lunch": {
-          "time": "12:00",
+          "start_time": "12:00",
+          "end_time": "13:30",
           "title": "餐厅名称",
           "kind": "restaurant",
           "tags": ["杭帮菜"],
@@ -211,7 +219,8 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
           "poi_id": "poi_456"
         },
         "afternoon": {
-          "time": "14:00",
+          "start_time": "14:00",
+          "end_time": "17:30",
           "title": "景点名称",
           "kind": "walk",
           "tags": ["拍照"],
@@ -220,7 +229,8 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
           "poi_id": "poi_789"
         },
         "dinner": {
-          "time": "18:00",
+          "start_time": "18:00",
+          "end_time": "19:30",
           "title": "餐厅名称",
           "kind": "restaurant",
           "tags": ["特色小吃"],
@@ -229,7 +239,8 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
           "poi_id": "poi_012"
         },
         "night": {
-          "time": "20:00",
+          "start_time": "20:00",
+          "end_time": "22:00",
           "title": "夜间活动名称",
           "kind": "photo",
           "tags": ["夜景"],
@@ -244,6 +255,9 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
 
 强约束补充：
 - 每天必须严格输出 5 个 ActivityBlock：morning / lunch / afternoon / dinner / night（小写英文，禁止用 evening）。
+- 每个 ActivityBlock 必须包含 start_time 和 end_time (HH:MM 格式)。
+- 每个 ActivityBlock 必须包含 selection_rationale，解释为什么选这个 POI（满足了谁、避开了谁、权衡了什么）。
+- end_time = start_time + POI.duration_min，且必须 ≤ POI.open_time.end - 30min。
 - lunch 和 dinner 必须从 POI 池中 category=='美食' 的项里选。
 - morning 不能用美食类（早餐用户自理）。
 - 全程 N 天的所有 lunch.poi_id ∪ dinner.poi_id 共 2N 个 POI ID 必须互不重复。
@@ -253,19 +267,55 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
 """
 
 
+def _format_personalized_constraints(profiles: List[UserProfile]) -> str:
+    """Extract and format key personalized constraints as natural language."""
+    lines = []
+    # 成员名册映射，方便 LLM 在可读文本中使用 display_name
+    roster = ", ".join([f"{p['user_id']}={p.get('display_name', p['user_id'])}" for p in profiles])
+    lines.append(f"【成员名册】（请在所有可读文本中使用 display_name）: {roster}")
+    
+    for p in profiles:
+        hc = p.get("hard_constraints", {})
+        sp = p.get("strong_preferences", {})
+        name = p.get("display_name", p["user_id"])
+        
+        if hc.get("latest_rest_time"):
+            lines.append(f"- {name} 最晚 {hc['latest_rest_time']} 休息（night 时段必须在此之前结束）")
+        
+        if hc.get("no_consecutive_early_start"):
+            lines.append(f"- {name} 不接受连续两天早起（早于 09:00 出发）")
+            
+        if hc.get("must_have_highlight_slots"):
+            slots = hc["must_have_highlight_slots"]
+            if isinstance(slots, list):
+                lines.append(f"- {name} 必须包含以下高光体验：{', '.join(slots)}")
+            elif isinstance(slots, int):
+                lines.append(f"- {name} 全程必须至少有 {slots} 个高光活动")
+
+        if sp.get("photography_golden_hour", 0) >= 0.7:
+            lines.append(f"- {name} 极度重视黄金时段摄影，请在 17:00-19:00 安排独立摄影时段或相关景点")
+            
+    return "\n".join(lines)
+
+
 def user_prompt_generator(state: TripState) -> str:
     poi_pool = state.get("poi_pool") or {}
     conflicts = state.get("conflicts_v2") or {}
+    profiles = state.get("profiles", [])
+    
+    personalized = _format_personalized_constraints(profiles)
     
     return (
         f"目的地：{state.get('cities', ['杭州'])}\n"
         f"天数：{state.get('days', 7)}\n"
         f"总预算：{state.get('budget_total', 15000)} CNY\n\n"
+        f"【关键个性化要求】\n"
+        f"{personalized if personalized else '无特别要求'}\n\n"
         f"【特别注意：硬约束清单】\n"
         f"{json.dumps(conflicts.get('tiered_constraints', {}).get('hard', []), ensure_ascii=False, indent=2)}\n\n"
         f"【专家建议】\n"
         f"{json.dumps([c['suggestion'] for c in conflicts.get('dimension_conflicts', [])], ensure_ascii=False, indent=2)}\n\n"
-        f"成员画像：\n{json.dumps(state.get('profiles', []), ensure_ascii=False, indent=2)}\n\n"
+        f"成员画像：\n{json.dumps(profiles, ensure_ascii=False, indent=2)}\n\n"
         f"POI 候选池：\n{json.dumps(poi_pool, ensure_ascii=False, indent=2)}\n\n"
         f"请输出 1 套公平优先的推荐方案。"
     )
@@ -278,6 +328,10 @@ def user_prompt_generator(state: TripState) -> str:
 SYS_EVALUATOR_V2 = """你是「多人旅行协同 Agent」里的 Evaluator Agent。
 职责：评估生成的旅行方案对每位成员的满足程度，按 6 个维度打分，并审计补偿落实情况。
 严格输出 JSON，不要 markdown、不要额外解释。
+
+【命名规范】
+- evidence / reason 等面向用户的可读文本必须使用成员的 `display_name`（如 Linda、阿文）。
+- `user_id` 字段保持原始 ID（如 A、B）。
 
 评分锚点 (0-100)：
 - 100: 完全贴合，节奏舒适，有缓冲，核心偏好高光命中。
@@ -309,14 +363,18 @@ SYS_EVALUATOR_V2 = """你是「多人旅行协同 Agent」里的 Evaluator Agent
 }
 
 compensation_audit 要求：
-- 必须基于 evidence 引用（day 和 activity_index）。
+- 必须基于 evidence 引用（day 和 activity_index 必填，缺一即视为格式错误）。
 - 语义判定补偿是否真实到位。
 - fulfillment 取值必须是 "fulfilled" | "partial" | "missed" 三选一，不允许缺省。
+- title 必填，用于前端展示。
 """
 
 def user_prompt_evaluator(state: TripState) -> str:
+    profiles = state.get('profiles', [])
+    roster = ", ".join([f"{p['user_id']}={p.get('display_name', p['user_id'])}" for p in profiles])
     return (
-        f"成员画像：\n{json.dumps(state.get('profiles', []), ensure_ascii=False, indent=2)}\n\n"
+        f"【成员名册】（请在所有可读文本中使用 display_name）: {roster}\n\n"
+        f"成员画像：\n{json.dumps(profiles, ensure_ascii=False, indent=2)}\n\n"
         f"冲突分析：\n{json.dumps(state.get('conflicts_v2', {}), ensure_ascii=False, indent=2)}\n\n"
         f"旅行方案：\n{json.dumps(state.get('proposal', {}), ensure_ascii=False, indent=2)}\n\n"
         f"请给出 6 维满意度评分和补偿审计。"
@@ -330,26 +388,39 @@ SYS_EXPLAINER = """你是「多人旅行协同 Agent」里的 Explainer Agent。
 职责：把方案的决策取舍翻译成成员能一眼看懂的影响说明。
 严格输出 JSON，不要 markdown、不要额外解释。
 
+【命名规范】
+- recommendation_reasons / trade_off_summary / met / gave_up / compensation 等面向用户的可读文本必须使用成员的 `display_name`（如 Linda、阿文）。
+- `user_id` 字段保持原始 ID（如 A、B）。
+
+核心任务：
+1. **总结推荐理由**：4 条简短有力的理由。
+2. **揭示决策权衡 (trade_off_summary)**：明确指出为了平衡团队，谁做出了什么让步，或者为了满足谁，牺牲了什么。
+3. **个人影响说明**：每位成员的满足点、妥协点和补偿点。
+
 期望输出 schema：
 {
   "recommendation_reasons": ["<20字>", "<20字>", "<20字>", "<20字>"],
+  "trade_off_summary": ["由于 Linda 坚持慢游，Day 2 下午取消了 阿文 喜欢的第二个博物馆", "为了满足 阿陈 的预算，全员在 Day 3 选择了平价餐厅"],
   "per_user_impact": [
     {
       "user_id": "A",
       "satisfaction": 88,
-      "met": ["<25字>"],
-      "gave_up": ["<25字>"],
-      "compensation": ["<25字>"]
+      "met": ["Linda 拍到了西湖日落"],
+      "gave_up": ["Linda 放弃了去灵隐寺"],
+      "compensation": ["Linda 在 Day 3 获得了 2 小时自由摄影时间"]
     }
   ]
 }
 """
 
 def user_prompt_explainer(state: TripState) -> str:
+    profiles = state.get('profiles', [])
+    roster = ", ".join([f"{p['user_id']}={p.get('display_name', p['user_id'])}" for p in profiles])
     return (
+        f"【成员名册】（请在所有可读文本中使用 display_name）: {roster}\n\n"
         f"方案：\n{json.dumps(state.get('proposal', {}), ensure_ascii=False, indent=2)}\n\n"
         f"评分报告：\n{json.dumps(state.get('evaluation_report', {}), ensure_ascii=False, indent=2)}\n\n"
-        f"画像：\n{json.dumps(state.get('profiles', []), ensure_ascii=False, indent=2)}\n\n"
+        f"画像：\n{json.dumps(profiles, ensure_ascii=False, indent=2)}\n\n"
         f"请输出成员影响说明和 4 条总体推荐理由。"
     )
 
@@ -360,6 +431,10 @@ def user_prompt_explainer(state: TripState) -> str:
 SYS_REPLANNER = """你是「多人旅行协同 Agent」里的 Replanner Agent (增量重排版)。
 职责：当行程中发生突发事件时，在保持「已冻结天数」完全不变的前提下，对「待调整天数」做最小扰动调整。
 严格输出 JSON，不要 markdown、不要额外解释。
+
+【命名规范】
+- event_summary / impact_range / how_adjusted 等面向用户的可读文本必须使用成员的 `display_name`（如 Linda、阿文）。
+- `most_affected` / `compensated` 等字段中的 key 或 value 若涉及用户，请使用 `user_id:score` 格式（如 A:-6）。
 
 核心原则：
 1. **增量重排**：你收到的方案包含 `frozen_days` (绝对不可修改) 和 `dirty_days` (你可以修改)。你的任务是重写 `dirty_days`。
@@ -389,6 +464,8 @@ def user_prompt_replanner(state: TripState) -> str:
     anchor_day = state.get("anchor_day", 1)
     proposal = state.get("proposal", {})
     per_day = proposal.get("per_day", [])
+    profiles = state.get('profiles', [])
+    roster = ", ".join([f"{p['user_id']}={p.get('display_name', p['user_id'])}" for p in profiles])
     
     frozen_days = per_day[:anchor_day - 1]
     dirty_days = per_day[anchor_day - 1:]
@@ -397,6 +474,7 @@ def user_prompt_replanner(state: TripState) -> str:
     event_history = [e for e in state.get("events", []) if e.get("id") not in state.get("new_event_ids", [])]
 
     return (
+        f"【成员名册】（请在所有可读文本中使用 display_name）: {roster}\n\n"
         f"【当前状态】\n"
         f"时间锚点：Day {anchor_day} (Day 1 到 Day {anchor_day-1} 已冻结，不可修改)\n"
         f"新发事件：{json.dumps(new_events, ensure_ascii=False, indent=2)}\n"
@@ -405,7 +483,7 @@ def user_prompt_replanner(state: TripState) -> str:
         f"已冻结天数 (frozen_days)：{json.dumps(frozen_days, ensure_ascii=False, indent=2)}\n"
         f"待调整天数 (dirty_days)：{json.dumps(dirty_days, ensure_ascii=False, indent=2)}\n\n"
         f"【约束信息】\n"
-        f"成员画像：{json.dumps(state.get('profiles', []), ensure_ascii=False, indent=2)}\n"
+        f"成员画像：{json.dumps(profiles, ensure_ascii=False, indent=2)}\n"
         f"POI 候选池：{json.dumps(state.get('poi_pool', {}), ensure_ascii=False, indent=2)}\n\n"
         f"请基于上述信息，对 dirty_days 进行重排，并输出完整的 new_proposal (包含 frozen + new_dirty)。"
     )

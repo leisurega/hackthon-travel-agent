@@ -18,19 +18,19 @@ from ..prompts import SYS_GENERATOR, user_prompt_generator
 from ..state import TripState
 
 
-def _collect_trip_goals(state: TripState):
-    goals = []
+def _collect_role_tags(state: TripState):
+    tags = []
     for p in state.get("profiles") or []:
-        # V2 schema: use strong_preferences keys with high weights
+        # V2 schema: use role_tag and strong_preferences keys
+        tag = p.get("role_tag")
+        if tag and tag not in tags:
+            tags.append(tag)
+        
         strong = p.get("strong_preferences") or {}
         for k, v in strong.items():
-            if v >= 0.7 and k not in goals:
-                goals.append(k)
-        # Legacy compatibility
-        for g in p.get("trip_goal") or []:
-            if g not in goals:
-                goals.append(g)
-    return goals
+            if v >= 0.7 and k not in tags:
+                tags.append(k)
+    return tags
 
 
 def _collect_anti_preferences(state: TripState):
@@ -99,7 +99,7 @@ def run(state: TripState) -> TripState:
     started = time.time()
 
     cities = state.get("cities") or ["杭州"]
-    goals = _collect_trip_goals(state)
+    goals = _collect_role_tags(state)
     antis = _collect_anti_preferences(state)
     hards = _collect_hard_conflicts(state)
     
@@ -120,7 +120,8 @@ def run(state: TripState) -> TripState:
             backend=backend,
             group_keywords=group_kw,
             per_user_keywords=user_kw,
-            food_keywords=food_kws
+            food_keywords=food_kws,
+            trace_collector=lambda m: trace.append(m)
         )
         
         if poi_failures:
@@ -135,7 +136,7 @@ def run(state: TripState) -> TripState:
             round_idx = 0
             while _restaurant_count(poi_pool, city) < needed and round_idx < MAX_SUPPLEMENT_ROUNDS:
                 existing = [p["name"] for p in poi_pool[city] if p.get("category") == "美食"]
-                new_kws = supplement_run(state, city, existing, needed)
+                new_kws = supplement_run(state, city, existing, needed, trace=trace)
                 if not new_kws:
                     break
                 

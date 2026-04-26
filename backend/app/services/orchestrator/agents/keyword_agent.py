@@ -29,8 +29,10 @@ def run(state: TripState) -> TripState:
     state["keywords"] = response
     
     elapsed = int((time.time() - started) * 1000)
-    trace.append(
-        f"[keyword] 提取关键字: {response.get('group_keywords', '')} ({elapsed}ms)"
-    )
+    trace.append(f"[keyword] group_keywords={response.get('group_keywords','')} ({elapsed}ms)")
+    trace.append(f"[keyword] food_keywords={response.get('food_keywords',[])}")
+    trace.append(f"[keyword] per_user_keywords={response.get('per_user_keywords',{})}")
+    trace.append(f"[keyword] 推理依据: {response.get('reasoning', '无')}")
+    
     state["agent_trace"] = trace
     return state

@@ -31,9 +31,7 @@
       },
       "negotiable_range": {
         "museum_hours_per_day": [0, 2],
-        "daily_walk_km": [4, 8],
-        "accept_split_action": true,
-        "hotel_to_west_lake_minutes": [10, 35]
+        "daily_walk_km": [4, 8]
       },
       "compensation_preference": [
         {"trigger": "未拍到日落", "action": "次日清晨独自西湖摄影 90min", "pref_key": "photography"},
@@ -78,9 +76,7 @@
       "negotiable_range": {
         "daily_walk_km": [6, 12],
         "museum_or_culture_hours_per_day": [2, 5],
-        "accept_early_start": true,
-        "accept_split_action": true,
-        "hotel_to_core_area_minutes": [10, 45]
+        "accept_early_start": true
       },
       "compensation_preference": [
         {"trigger": "文化体验时间被压缩", "action": "增加一次博物馆或古街讲解", "pref_key": "temple_culture"},
@@ -100,8 +96,6 @@
       "hard_constraints": {
         "budget_max": 4500,
         "walk_km_max": 6.0,
-        "must_have_midday_rest": true,
-        "midday_rest_minutes": 90,
         "latest_rest_time": "22:00",
         "dietary": ["no_raw_food", "light_taste"],
         "must_not": ["two_high_intensity_days_in_a_row", "long_hiking", "late_return"]
@@ -122,10 +116,7 @@
       },
       "negotiable_range": {
         "daily_walk_km": [2, 6],
-        "activity_blocks_per_day": [1, 2],
-        "museum_or_culture_hours_per_day": [0, 1.5],
-        "accept_split_action": true,
-        "hotel_to_core_area_minutes": [10, 40]
+        "museum_or_culture_hours_per_day": [0, 1.5]
       },
       "compensation_preference": [
         {"trigger": "步行过多", "action": "次日半天休息或打车出行", "pref_key": "low_pace"},

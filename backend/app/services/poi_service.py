@@ -23,7 +23,7 @@ import sys
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Set, TypedDict
+from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, TypedDict
 
 try:
     import requests
@@ -314,6 +314,7 @@ def build_candidate_pool(
     group_keywords: Optional[str] = None,
     per_user_keywords: Optional[Dict[str, str]] = None,
     food_keywords: Optional[List[str]] = None,
+    trace_collector: Optional[Callable[[str], None]] = None,
 ) -> Tuple[Dict[str, List[POI]], List[str]]:
     """For each city, fetch top-K POIs across all categories implied by the
     combined trip_goals of the group. Returns ({city: [POI, ...]}, failures).
@@ -326,6 +327,10 @@ def build_candidate_pool(
     fallback = MockPOIBackend()
     failures = []
     
+    def collect_trace(msg: str):
+        if trace_collector:
+            trace_collector(msg)
+
     # 1. Determine categories based on goals
     categories = _goals_to_categories(trip_goals)
     
@@ -346,6 +351,7 @@ def build_candidate_pool(
     for city in cities:
         bucket: List[POI] = []
         seen_ids: Set[str] = set()
+        hits = []
         
         # 3. Search each category (Non-food)
         for cat in [c for c in filtered_categories if c != "美食"]:
@@ -354,10 +360,14 @@ def build_candidate_pool(
                 # Attempt 1: Combine category and group keywords
                 if group_keywords:
                     items = b.search(city, cat, keywords=group_keywords, top_k=top_k_per_category)
+                    if items:
+                        hits.append(f"{cat}({group_keywords})→{len(items)}")
                 
                 # Attempt 2: If no results with keywords, fallback to category-only
                 if not items:
                     items = b.search(city, cat, keywords=None, top_k=top_k_per_category)
+                    if items:
+                        hits.append(f"{cat}→{len(items)}")
             except Exception as exc:
                 failures.append(f"{city}/{cat}: {exc}")
                 print(f"[poi_service] {b.name} search failed for {city}/{cat}: {exc}",
@@ -367,6 +377,8 @@ def build_candidate_pool(
                     items = fallback.search(city, cat, keywords=group_keywords, top_k=top_k_per_category)
                     if not items:
                         items = fallback.search(city, cat, keywords=None, top_k=top_k_per_category)
+                    if items:
+                        hits.append(f"{cat}(mock)→{len(items)}")
             
             for it in items:
                 # Quality gate: ensure crucial metadata exists
@@ -391,6 +403,8 @@ def build_candidate_pool(
                         time.sleep(0.2)
                         # Use a higher top_k for food keyword search
                         items = b.search(city, "美食", keywords=kw, top_k=10)
+                        if items:
+                            hits.append(f"美食({kw})→{len(items)}")
                         food_items.extend(items)
                     except Exception as exc:
                         failures.append(f"{city}/美食({kw}): {exc}")
@@ -401,11 +415,15 @@ def build_candidate_pool(
                 try:
                     # Search with generic "美食" to ensure we have enough
                     items = b.search(city, "美食", keywords=None, top_k=top_k_per_category)
+                    if items:
+                        hits.append(f"美食→{len(items)}")
                     food_items.extend(items)
                 except Exception as exc:
                     failures.append(f"{city}/美食(generic): {exc}")
                     if b.name != "mock":
                         items = fallback.search(city, "美食", keywords=None, top_k=top_k_per_category)
+                        if items:
+                            hits.append(f"美食(mock)→{len(items)}")
                         food_items.extend(items)
 
             for it in food_items:
@@ -424,6 +442,8 @@ def build_candidate_pool(
                 try:
                     # Search in "景点" by default for user keywords
                     items = b.search(city, "景点", keywords=user_kw, top_k=5)
+                    if items:
+                        hits.append(f"{uid}({user_kw})→{len(items)}")
                     for it in items:
                         if not it.get("walk_km_estimate") or not it.get("duration_min"):
                             continue
@@ -445,6 +465,10 @@ def build_candidate_pool(
                 except Exception as exc:
                     failures.append(f"{city}/user_kw({uid}): {exc}")
                     print(f"[poi_service] per-user search failed for {uid}/{user_kw}: {exc}", file=sys.stderr)
+
+        # Trace hits
+        if hits:
+            collect_trace(f"[pool] {city} 关键词命中: {', '.join(hits)}")
 
         # 5. For selected POIs, if rating is 0, try to fetch detail (only for amap)
         if b.name == "amap":

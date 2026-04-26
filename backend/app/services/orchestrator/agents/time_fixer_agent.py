@@ -63,7 +63,12 @@ def run(state: TripState) -> TripState:
         found_swap = False
         for cand in candidates:
             cand_open = cand.get("open_time")
-            if cand_open and within_open_window(activity["time"], cand_open):
+            if not cand_open: continue
+            
+            start = activity.get("start_time") or activity.get("time")
+            end = activity.get("end_time") or start
+            
+            if within_open_window(start, cand_open) and within_open_window(end, cand_open):
                 # Found a swap!
                 old_title = activity["title"]
                 activity["title"] = cand["name"]
