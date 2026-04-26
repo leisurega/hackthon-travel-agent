@@ -7,6 +7,7 @@ flakes at demo time, it transparently falls back to `explanation_cache.json`.
 from __future__ import annotations
 
 import os
+import time
 
 from ...llm_client import call_llm
 from ..prompts import SYS_EXPLAINER, user_prompt_explainer
@@ -21,7 +22,7 @@ def _force_real() -> bool:
 
 def run(state: TripState) -> TripState:
     trace = state.get("agent_trace", []) or []
-    trace.append("explainer_agent: building prompt (live Qwen preferred)")
+    started = time.time()
 
     response = call_llm(
         system=SYS_EXPLAINER,
@@ -35,8 +36,10 @@ def run(state: TripState) -> TripState:
         "recommendation_reasons": response["recommendation_reasons"],
         "per_user_impact": response["per_user_impact"],
     }
+    elapsed = int((time.time() - started) * 1000)
     trace.append(
-        f"explainer_agent: {len(response['per_user_impact'])} user impacts generated"
+        f"[explainer] 已生成 {len(response['per_user_impact'])} 位成员的影响说明 "
+        f"({elapsed}ms)"
     )
     state["agent_trace"] = trace
     return state

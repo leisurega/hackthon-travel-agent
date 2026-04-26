@@ -1,0 +1,139 @@
+{
+  "_schema_version": 2,
+  "profiles": [
+    {
+      "user_id": "user_A",
+      "display_name": "林然",
+      "role": "主导成员",
+      "role_tag": "西湖摄影慢游型",
+      "protection_level": "medium",
+      "core_story": "自媒体内容创作者，希望在杭州拍到西湖日落、清晨湖边和城市氛围素材，不喜欢高密度打卡。",
+      "hard_constraints": {
+        "budget_max": 8000,
+        "dietary": ["no_coriander"],
+        "latest_rest_time": "23:00",
+        "no_consecutive_early_start": true,
+        "walk_km_max": 8.0,
+        "must_have_highlight_slots": ["west_lake_sunset_photo", "morning_or_evening_lake_photo"]
+      },
+      "strong_preferences": {
+        "west_lake_scenery": 0.95,
+        "photography": 0.95,
+        "city_walk": 0.85,
+        "coffee_time": 0.7,
+        "slow_pace": 0.85
+      },
+      "anti_preferences": {
+        "packed_schedule": 0.9,
+        "long_museum_day": 0.65,
+        "continuous_early_start": 0.85,
+        "pure_shopping_day": 0.7
+      },
+      "negotiable_range": {
+        "museum_hours_per_day": [0, 2],
+        "daily_walk_km": [4, 8],
+        "accept_split_action": true,
+        "hotel_to_west_lake_minutes": [10, 35]
+      },
+      "compensation_preference": [
+        {"trigger": "未拍到日落", "action": "次日清晨独自西湖摄影 90min", "pref_key": "photography"},
+        {"trigger": "节奏过密", "action": "次日晚起或减少一个活动", "pref_key": "slow_pace"}
+      ],
+      "scoring_weights": {
+        "T": 0.15, "B": 0.10, "P": 0.20, "I": 0.35, "F": 0.10, "S": 0.10
+      }
+    },
+    {
+      "user_id": "user_B",
+      "display_name": "周屿",
+      "role": "成员",
+      "role_tag": "文化深度探索型",
+      "protection_level": "low",
+      "core_story": "历史文化爱好者，希望杭州行不只是拍照，而是深入体验灵隐寺、茶文化、南宋文化和良渚文明。",
+      "hard_constraints": {
+        "budget_max": 10000,
+        "must_have_experiences": [
+          "lingyin_or_temple_culture_deep_experience",
+          "tea_culture_experience"
+        ],
+        "must_have_highlight_count": 2,
+        "must_not": ["only_surface_sightseeing", "pure_photo_trip"],
+        "walk_km_max": 12.0,
+        "latest_rest_time": "00:00"
+      },
+      "strong_preferences": {
+        "temple_culture": 0.95,
+        "tea_culture": 0.9,
+        "song_dynasty_culture": 0.9,
+        "liangzhu_culture": 0.85,
+        "museum": 0.8,
+        "historical_architecture": 0.85
+      },
+      "anti_preferences": {
+        "pure_cafe_day": 0.7,
+        "long_photo_waiting": 0.7,
+        "shopping_half_day": 0.8,
+        "low_content_itinerary": 0.9
+      },
+      "negotiable_range": {
+        "daily_walk_km": [6, 12],
+        "museum_or_culture_hours_per_day": [2, 5],
+        "accept_early_start": true,
+        "accept_split_action": true,
+        "hotel_to_core_area_minutes": [10, 45]
+      },
+      "compensation_preference": [
+        {"trigger": "文化体验时间被压缩", "action": "增加一次博物馆或古街讲解", "pref_key": "temple_culture"},
+        {"trigger": "灵隐寺行程被取消", "action": "补偿其他寺庙或茶文化体验", "pref_key": "temple_culture"}
+      ],
+      "scoring_weights": {
+        "T": 0.10, "B": 0.10, "P": 0.15, "I": 0.45, "F": 0.10, "S": 0.10
+      }
+    },
+    {
+      "user_id": "user_C",
+      "display_name": "陈安",
+      "role": "成员",
+      "role_tag": "预算低体力舒适型",
+      "protection_level": "high",
+      "core_story": "预算敏感、体力一般、需要午休，旅行目标是放松和少踩坑，不想被高强度行程拖着走。",
+      "hard_constraints": {
+        "budget_max": 4500,
+        "walk_km_max": 6.0,
+        "must_have_midday_rest": true,
+        "midday_rest_minutes": 90,
+        "latest_rest_time": "22:00",
+        "dietary": ["no_raw_food", "light_taste"],
+        "must_not": ["two_high_intensity_days_in_a_row", "long_hiking", "late_return"]
+      },
+      "strong_preferences": {
+        "clean_hotel": 0.95,
+        "easy_transport": 0.85,
+        "low_pace": 0.95,
+        "budget_saving": 0.95,
+        "quiet_rest_time": 0.9
+      },
+      "anti_preferences": {
+        "long_walk": 0.95,
+        "frequent_hotel_change": 0.85,
+        "expensive_restaurant": 0.9,
+        "tight_transfer": 0.85,
+        "crowded_checkin_spot": 0.75
+      },
+      "negotiable_range": {
+        "daily_walk_km": [2, 6],
+        "activity_blocks_per_day": [1, 2],
+        "museum_or_culture_hours_per_day": [0, 1.5],
+        "accept_split_action": true,
+        "hotel_to_core_area_minutes": [10, 40]
+      },
+      "compensation_preference": [
+        {"trigger": "步行过多", "action": "次日半天休息或打车出行", "pref_key": "low_pace"},
+        {"trigger": "未安排午休", "action": "次日晚起或增加自由休息时段", "pref_key": "quiet_rest_time"}
+      ],
+      "scoring_weights": {
+        "T": 0.15, "B": 0.25, "P": 0.30, "I": 0.10, "F": 0.15, "S": 0.05
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "final_group_score": 66.53,
+  "status": "Reject",
+  "status_reasons": [
+    "存在 must_have 缺失",
+    "最低个人满意度(36.5)低于 55"
+  ],
+  "metrics": {
+    "s_avg": 68.0,
+    "s_min": 36.5,
+    "fairness": 75.0,
+    "execution_efficiency": 90,
+    "robustness": 85
+  },
+  "per_user": [
+    {
+      "user_id": "user_A",
+      "base_score": 84.0,
+      "penalties": 0,
+      "penalty_details": [],
+      "final_satisfaction": 84.0,
+      "must_have_missing": [
+        "morning_or_evening_lake_photo"
+      ]
+    },
+    {
+      "user_id": "user_B",
+      "base_score": 83.5,
+      "penalties": 0,
+      "penalty_details": [],
+      "final_satisfaction": 83.5,
+      "must_have_missing": [
+        "tea_culture_experience"
+      ]
+    },
+    {
+      "user_id": "user_C",
+      "base_score": 71.5,
+      "penalties": 35,
+      "penalty_details": [
+        "连续妥协 ≥2 天 (-15)",
+        "全程无高光 (-10)",
+        "保护型用户满意度偏低 (-10)"
+      ],
+      "final_satisfaction": 36.5,
+      "must_have_missing": [
+        "must_have_midday_rest"
+      ]
+    }
+  ]
+}

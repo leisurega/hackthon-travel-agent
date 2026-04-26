@@ -1,12 +1,10 @@
 """Prompt templates for every LLM-driven Agent node.
 
-P3 uses the `EXPECTED_OUTPUT_SCHEMA_*` strings in this file to build the
-matching `*_llm_mock.json` files under backend/app/data/. When USE_MOCK=false
-is flipped on, the exact same shape comes out of Qwen.
-
-Each node exposes two things:
-  1. SYS_<NODE>                -- system prompt (role + output contract)
-  2. user_prompt_<node>(state) -- builds the user prompt from TripState
+P1 defines this file. P2 and P3 are read-only consumers:
+- P2 (frontend) uses the GET /api/trip/{id} response which mirrors this shape.
+- P3 (data + scoring) must ensure every *_llm_mock.json matches the field
+  names and nesting defined here so that USE_MOCK=false can be flipped without
+  any other change.
 """
 from __future__ import annotations
 
@@ -21,7 +19,7 @@ from .state import TripState, UserProfile
 # ===========================================================================
 
 SYS_PROFILE = """你是「多人旅行协同 Agent」里的 Profile Agent。
-职责：把每位成员的自然语言描述解析成结构化的个人画像。
+职责：把每位成员的自然语言描述解析成结构化的 6 维个人画像。
 严格输出 JSON，不要 markdown、不要额外解释。
 
 期望输出 schema：
@@ -31,31 +29,41 @@ SYS_PROFILE = """你是「多人旅行协同 Agent」里的 Profile Agent。
       "user_id": "A",
       "display_name": "A 用户",
       "role": "主导成员" 或 "成员",
-      "trip_goal": ["放松","美食","摄影"],
+      "role_tag": "西湖摄影慢游型",
+      "protection_level": "high" | "medium" | "low",
+      "core_story": "画像背景描述",
       "hard_constraints": {
-        "budget_cap": 12000,
-        "diet": ["不吃香菜"],
-        "daily_walk_km_max": 8,
-        "latest_rest_time": "23:30"
+        "budget_max": 5000,
+        "walk_km_max": 6.0,
+        "midday_rest": true,
+        "dietary": ["不吃香菜"],
+        "latest_rest_time": "22:00"
       },
       "strong_preferences": {
-        "city_walking": 85,
-        "museum": 60,
-        "photography_golden_hour": 95,
-        "free_time": 70
+        "photography": 1.0,
+        "museum": 0.8,
+        "city_walk": 0.9
       },
-      "anti_preferences": ["高密度行程","夜生活","高频换酒店"],
-      "negotiable_range": ["可接受 0-2 小时博物馆","可接受酒店稍远","可接受分头行动"],
-      "key_tags": ["放松导向","摄影偏好","预算敏感","夜生活低兴趣","不喜欢高强度行程"],
-      "confidence": 82,
-      "radar": [80, 60, 90, 50, 30, 70],
-      "completeness": 82
+      "anti_preferences": {
+        "crowds": 1.0,
+        "shopping": 0.7
+      },
+      "negotiable_range": {
+        "museum_hours": [0, 2]
+      },
+      "scoring_weights": {
+        "T": 0.15, "B": 0.15, "P": 0.20, "I": 0.25, "F": 0.15, "S": 0.10
+      },
+      "compensation_preference": [
+        {"trigger": "未拍到日落", "action": "次日清晨独自西湖摄影 90min", "pref_key": "photography"}
+      ]
     }
   ]
 }
 
 必须有 4 个 profile，user_id 为 A/B/C/D。
-radar 顺序：[放松, 美食, 摄影, 博物馆, 购物, 深度文化]，每项 0-100。
+scoring_weights 6 个维度：T(时间), B(预算), P(节奏), I(兴趣), F(饮食), S(社交)，总和必须为 1.0。
+strong_preferences 和 anti_preferences 的值在 0.0-1.0 之间。
 """
 
 
@@ -77,228 +85,327 @@ EXPECTED_OUTPUT_SCHEMA_PROFILE = """见 SYS_PROFILE，顶层是 {"profiles": [Us
 # ===========================================================================
 
 SYS_CONFLICT = """你是「多人旅行协同 Agent」里的 Conflict Agent。
-职责：对比 4 份成员画像，识别他们之间的冲突，输出冲突卡片列表、冲突热力矩阵、顶部摘要。
+职责：对比成员画像，识别 6 维潜在冲突，输出冲突卡片、热力矩阵和分层约束。
 严格输出 JSON，不要 markdown、不要额外解释。
+
+核心维度：T(时间), B(预算), P(节奏), I(兴趣), F(饮食), S(社交)。
 
 期望输出 schema：
 {
-  "conflicts": [
+  "dimension_conflicts": [
     {
-      "conflict_id": "c1",
-      "type": "节奏冲突",
-      "title": "节奏冲突：A 偏向慢游，B 偏向高密度打卡",
-      "users": ["A","B"],
-      "severity": "高",
-      "description": "A 偏向慢游，B 偏向高密度打卡",
-      "suggestion": "建议：在行程中安排'慢游+打卡'组合段，平衡节奏。",
-      "is_hard": false
+      "dimension": "时间与可用性",
+      "dim_key": "T",
+      "overall_score": 80,
+      "tier": "硬需求" | "强软" | "弱软",
+      "involved_users": ["A", "B"],
+      "summary": "描述冲突内容",
+      "suggestion": "给出缓解建议"
     }
   ],
-  "conflict_summary": {
-    "total": 12,
-    "high_priority": 4,
-    "hard": 2,
-    "feasibility": 71
+  "user_dim_pressure": {
+    "A": {"T": 0, "B": 20, "P": 0, "I": 10, "F": 0, "S": 0}
   },
-  "heatmap": [
-    [0, 1, 2, 2],
-    [1, 2, 1, 0],
-    [2, 3, 0, 1],
-    [0, 1, 2, 1],
-    [2, 0, 2, 1],
-    [1, 0, 1, 0]
-  ]
+  "tiered_constraints": {
+    "hard": [{"user": "A", "dim": "F", "item": "花生过敏"}],
+    "strong_soft": [],
+    "weak_soft": []
+  },
+  "feasibility_status": "Pass" | "Conditional" | "Reject",
+  "feasibility_reason": "简述理由",
+  "heatmap": [[0,1,2,2], ...] // 6x4 矩阵
 }
 
-heatmap 是 6 行 x 4 列整数矩阵：
-- 行顺序: [预算, 时间, 节奏, 兴趣, 饮食, 社交]
-- 列顺序: [A, B, C, D]
-- 取值: 0=无冲突, 1=低, 2=中, 3=高
-severity 只能是 "低" / "中" / "高"。
+heatmap 顺序：行[T,B,P,I,F,S]，列[A,B,C,D]。
 """
 
 
 def user_prompt_conflict(profiles: List[UserProfile]) -> str:
     return (
-        "以下是 4 位成员的完整画像，请识别他们之间的冲突并输出 JSON：\n\n"
+        "以下是成员的完整画像，请识别 6 维冲突并输出 JSON：\n\n"
         + json.dumps(profiles, ensure_ascii=False, indent=2)
     )
 
 
-EXPECTED_OUTPUT_SCHEMA_CONFLICT = """见 SYS_CONFLICT，顶层是 {"conflicts": [...], "conflict_summary": {...}, "heatmap": 6x4}"""
+EXPECTED_OUTPUT_SCHEMA_CONFLICT = """见 SYS_CONFLICT，顶层是 {"dimension_conflicts": [...], "user_dim_pressure": {...}, "tiered_constraints": {...}, "feasibility_status": "...", "heatmap": 6x4}"""
 
 
 # ===========================================================================
-# 3. generator_agent
+# 3. keyword_agent
 # ===========================================================================
 
-SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generator Agent。
-职责：基于 4 份画像 + 冲突列表 + 预算 + 候选城市 + **POI 候选池**，生成 1 套公平优先的推荐方案。
+SYS_KEYWORD_EXTRACTOR = """你是「多人旅行协同 Agent」里的 Keyword Extractor。
+职责：根据成员画像和行程天数，提取用于高德地图搜索的中文关键字。
+关注 3 类输出：
+1. group_keywords: 群体共性的景点/文化大类关键词（用 | 分隔），用于早晨/下午/夜间活动检索。
+2. food_keywords: 餐饮搜索关键词列表 List[str]。
+   规则：行程 N 天，午餐 + 晚餐共需 2N 个不重复餐厅，请输出至少 ceil(2N/3) 组覆盖不同菜系/价位/风格的关键词。
+   每组形式："菜系" 或 "品类+特色"（如"杭帮菜""素食面馆""江南小吃"）。
+   必须避开所有成员 anti_preferences / 饮食硬约束（如花生过敏 → 避开"川菜""东南亚菜"等高风险关键词）。
+3. per_user_keywords: 每位用户的核心兴趣关键词（满足个人补偿场景）。
 严格输出 JSON，不要 markdown、不要额外解释。
+
+期望输出 schema：
+{
+  "group_keywords": "西湖|宋韵|博物馆",
+  "food_keywords": ["杭帮菜", "本帮面", "素斋", "茶餐厅", "湖鲜小馆"],
+  "per_user_keywords": {
+    "A": "摄影|西湖日落",
+    "B": "博物馆|历史建筑"
+  }
+}
+"""
+
+
+def user_prompt_keyword(profiles: List[UserProfile], days: int, cities: List[str]) -> str:
+    return (
+        f"行程：{days} 天，目的地：{cities}\n"
+        f"提示：{days} 天意味着需要 {days * 2} 顿午晚餐都不重复，请输出足够多组餐饮关键词。\n"
+        f"画像：{json.dumps(profiles, ensure_ascii=False)}"
+    )
+
+# ===========================================================================
+# 4. generator_agent
+# ===========================================================================
+
+SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generator Agent (V3 约束驱动版)。
+职责：基于画像、冲突列表、硬约束、补偿偏好和 POI 池，生成 1 套公平优先且严控红线的方案。
+严格输出 JSON，不要 markdown、不要额外解释。
+
+核心原则：
+1. **硬约束红线**：所有 hard_constraints 由系统量化校验（步行/预算/作息/饮食/时间），违反即重生成。你负责让方案落在红线内，不要在心中做加法估算。
+2. **营业时间约束**：每个 ActivityBlock 的 `time` 必须落在所选 POI 的 `open_time` 范围内（考虑到入场，建议安排在开始营业后 30 分钟到结束营业前 30 分钟之间）。
+3. **补偿机制**：如果某天因为团队行程牺牲了某人的 strong_preferences，必须在后续日程中按照其 compensation_preference 安排独立时段补偿活动（不影响群体大部队）。
+3. **共性优先**：群体共同活动（尤其是餐饮）优先选择满足所有人 anti_preferences 的 POI。
 
 期望输出 schema：
 {
   "proposal": {
     "proposal_id": "p1",
     "type": "公平优先",
-    "cities": ["北京","上海","杭州"],
-    "city_days": [3, 2, 2],
-    "total_budget": 30000,
-    "per_person_budget": 7500,
-    "per_person_per_day": 1071,
-    "recommendation_reasons": [
-      "满足核心偏好，冲突较少",
-      "日程节奏适中，体验丰富",
-      "预算控制良好，性价比高",
-      "公平指数高 (0.82)"
-    ],
+    "cities": ["杭州"],
+    "city_days": [7],
+    "total_budget": 15000,
     "per_day": [
       {
         "day": 1,
-        "city": "北京",
-        "theme": "抵达北京，天安门故宫中轴线",
+        "city": "杭州",
+        "theme": "主题描述",
         "morning": {
-          "time": "10:00",
-          "title": "抵达北京，酒店放行李",
-          "kind": "transit",
+          "time": "09:00",
+          "title": "POI名称",
+          "kind": "museum",
           "is_indoor": true,
-          "tags": ["入住"],
-          "beneficiaries": ["A","B","C","D"],
-          "cost": 0,
-          "poi_id": "bj_hotel_wangfujing"
+          "tags": ["标签"],
+          "beneficiaries": ["A","B"],
+          "cost": 60,
+          "poi_id": "poi_123"
         },
-        "noon":   { ... 同上 },
-        "evening":{ ... 同上 }
+        "lunch": {
+          "time": "12:00",
+          "title": "餐厅名称",
+          "kind": "restaurant",
+          "tags": ["杭帮菜"],
+          "beneficiaries": ["A","B","C"],
+          "cost": 80,
+          "poi_id": "poi_456"
+        },
+        "afternoon": {
+          "time": "14:00",
+          "title": "景点名称",
+          "kind": "walk",
+          "tags": ["拍照"],
+          "beneficiaries": ["A","C"],
+          "cost": 0,
+          "poi_id": "poi_789"
+        },
+        "dinner": {
+          "time": "18:00",
+          "title": "餐厅名称",
+          "kind": "restaurant",
+          "tags": ["特色小吃"],
+          "beneficiaries": ["A","B","C"],
+          "cost": 100,
+          "poi_id": "poi_012"
+        },
+        "night": {
+          "time": "20:00",
+          "title": "夜间活动名称",
+          "kind": "photo",
+          "tags": ["夜景"],
+          "beneficiaries": ["A"],
+          "cost": 0,
+          "poi_id": "poi_345"
+        }
       }
     ]
   }
 }
 
-硬性约束：
-- **每个 ActivityBlock 的 title / poi_id 必须来自下方 POI 候选池，严禁创造池外 POI**（transit/入住除外）。
-- ActivityBlock.tags 须从对应 POI 的 tags 中选择，再按需补充 1-2 个情境标签。
-- per_day 长度等于 sum(city_days)（默认 7 天）。
-- morning/noon/evening 每个 ActivityBlock 必须有完整字段：time/title/kind/is_indoor/tags/beneficiaries/cost/poi_id。
-- beneficiaries 用 user_id 字母 ["A","B","C","D"] 的子集，按该 POI 的 tags 与画像匹配结果选取。
-- 总成本 sum(cost) 不得超过 budget。
-- 注重公平：每个成员至少应在 3 天里出现在 beneficiaries 中，且每个 trip_goal 至少命中 2 次。
+强约束补充：
+- 每天必须严格输出 5 个 ActivityBlock：morning / lunch / afternoon / dinner / night（小写英文，禁止用 evening）。
+- lunch 和 dinner 必须从 POI 池中 category=='美食' 的项里选。
+- morning 不能用美食类（早餐用户自理）。
+- 全程 N 天的所有 lunch.poi_id ∪ dinner.poi_id 共 2N 个 POI ID 必须互不重复。
+- **每个 ActivityBlock 的 title / poi_id 必须来自 POI 候选池，严禁创造池外 POI**。
+- daily_walk_km 字段由系统计算，你不要在 JSON 中输出它，也不要自行估算。
+- beneficiaries 必须是 user_id 的子集。
 """
 
 
 def user_prompt_generator(state: TripState) -> str:
     poi_pool = state.get("poi_pool") or {}
-    if poi_pool:
-        pool_part = (
-            f"POI 候选池（只能从中选，poi_id 必须照搬）：\n"
-            f"{json.dumps(poi_pool, ensure_ascii=False, indent=2)}\n\n"
-        )
-    else:
-        pool_part = "POI 候选池：暂无（允许基于常识生成，但标注 poi_id=null）\n\n"
-
+    conflicts = state.get("conflicts_v2") or {}
+    
     return (
-        f"目的地范围：{state.get('cities', ['北京','上海','杭州'])}\n"
+        f"目的地：{state.get('cities', ['杭州'])}\n"
         f"天数：{state.get('days', 7)}\n"
-        f"总预算：{state.get('budget_total', 30000)} CNY\n\n"
+        f"总预算：{state.get('budget_total', 15000)} CNY\n\n"
+        f"【特别注意：硬约束清单】\n"
+        f"{json.dumps(conflicts.get('tiered_constraints', {}).get('hard', []), ensure_ascii=False, indent=2)}\n\n"
+        f"【专家建议】\n"
+        f"{json.dumps([c['suggestion'] for c in conflicts.get('dimension_conflicts', [])], ensure_ascii=False, indent=2)}\n\n"
         f"成员画像：\n{json.dumps(state.get('profiles', []), ensure_ascii=False, indent=2)}\n\n"
-        f"冲突列表：\n{json.dumps(state.get('conflicts', []), ensure_ascii=False, indent=2)}\n\n"
-        f"{pool_part}"
+        f"POI 候选池：\n{json.dumps(poi_pool, ensure_ascii=False, indent=2)}\n\n"
         f"请输出 1 套公平优先的推荐方案。"
     )
 
 
-EXPECTED_OUTPUT_SCHEMA_GENERATOR = """见 SYS_GENERATOR，顶层是 {"proposal": Proposal}"""
+# ===========================================================================
+# 5. evaluator_agent (SYS_EVALUATOR_V2)
+# ===========================================================================
 
+SYS_EVALUATOR_V2 = """你是「多人旅行协同 Agent」里的 Evaluator Agent。
+职责：评估生成的旅行方案对每位成员的满足程度，按 6 个维度打分，并审计补偿落实情况。
+严格输出 JSON，不要 markdown、不要额外解释。
+
+评分锚点 (0-100)：
+- 100: 完全贴合，节奏舒适，有缓冲，核心偏好高光命中。
+- 70: 有明显妥协但可补偿，有覆盖但偏弱。
+- 0: 触碰硬限制（预算超支、过敏未避开、时间冲突、must_have 缺失）。
+
+期望输出 schema：
+{
+  "per_user_scores": [
+    {
+      "user_id": "A",
+      "T": 90, "B": 85, "P": 70, "I": 95, "F": 100, "S": 80,
+      "evidence": { "T": "理由...", "I": "理由..." }
+    }
+  ],
+  "day_states": { "A": ["高光", "平衡", "妥协", ...] },
+  "highlight_count": { "A": 2, "B": 1 },
+  "protected_users": ["C"],
+  "compensation_audit": [
+    {
+      "user_id": "A",
+      "missed_strong_preference": "photography",
+      "matched_compensation_rule": "未拍到日落 → 次日清晨独自西湖摄影 90min",
+      "fulfilled_by": {"day": 2, "activity_index": 0, "title": "6:30 西湖独自摄影"},
+      "fulfillment": "fulfilled",
+      "reason": "时段对、主体对、时长达标、独立时段"
+    }
+  ]
+}
+
+compensation_audit 要求：
+- 必须基于 evidence 引用（day 和 activity_index）。
+- 语义判定补偿是否真实到位。
+- fulfillment 取值必须是 "fulfilled" | "partial" | "missed" 三选一，不允许缺省。
+"""
+
+def user_prompt_evaluator(state: TripState) -> str:
+    return (
+        f"成员画像：\n{json.dumps(state.get('profiles', []), ensure_ascii=False, indent=2)}\n\n"
+        f"冲突分析：\n{json.dumps(state.get('conflicts_v2', {}), ensure_ascii=False, indent=2)}\n\n"
+        f"旅行方案：\n{json.dumps(state.get('proposal', {}), ensure_ascii=False, indent=2)}\n\n"
+        f"请给出 6 维满意度评分和补偿审计。"
+    )
 
 # ===========================================================================
-# 4. explainer_agent  -- default uses force_real=True (real Qwen at demo time)
+# 6. explainer_agent
 # ===========================================================================
 
 SYS_EXPLAINER = """你是「多人旅行协同 Agent」里的 Explainer Agent。
-职责：把方案的决策取舍翻译成 4 位成员能一眼看懂的影响说明。
+职责：把方案的决策取舍翻译成成员能一眼看懂的影响说明。
 严格输出 JSON，不要 markdown、不要额外解释。
 
 期望输出 schema：
 {
-  "recommendation_reasons": [
-    "<不超过 20 字>",
-    "<不超过 20 字>",
-    "<不超过 20 字>",
-    "<不超过 20 字>"
-  ],
+  "recommendation_reasons": ["<20字>", "<20字>", "<20字>", "<20字>"],
   "per_user_impact": [
     {
       "user_id": "A",
       "satisfaction": 88,
-      "met": ["<不超过 25 字>"],
-      "gave_up": ["<不超过 25 字>"],
-      "compensation": ["<不超过 25 字>"]
-    },
-    { "user_id": "B", ... },
-    { "user_id": "C", ... },
-    { "user_id": "D", ... }
+      "met": ["<25字>"],
+      "gave_up": ["<25字>"],
+      "compensation": ["<25字>"]
+    }
   ]
 }
-
-语气要求：客观、决策感强、不用营销辞。
 """
-
 
 def user_prompt_explainer(state: TripState) -> str:
     return (
         f"方案：\n{json.dumps(state.get('proposal', {}), ensure_ascii=False, indent=2)}\n\n"
-        f"评分：\n{json.dumps(state.get('scores', {}), ensure_ascii=False, indent=2)}\n\n"
+        f"评分报告：\n{json.dumps(state.get('evaluation_report', {}), ensure_ascii=False, indent=2)}\n\n"
         f"画像：\n{json.dumps(state.get('profiles', []), ensure_ascii=False, indent=2)}\n\n"
-        f"请输出 4 位成员的影响说明和 4 条总体推荐理由。"
+        f"请输出成员影响说明和 4 条总体推荐理由。"
     )
 
-
-EXPECTED_OUTPUT_SCHEMA_EXPLAINER = """见 SYS_EXPLAINER，顶层是 {"recommendation_reasons": [...], "per_user_impact": [PerUserScore x 4]}"""
-
-
 # ===========================================================================
-# 5. replanner_agent
+# 7. replanner_agent
 # ===========================================================================
 
-SYS_REPLANNER = """你是「多人旅行协同 Agent」里的 Replanner Agent。
-职责：突发事件触发后，对原方案做最小扰动调整。
+SYS_REPLANNER = """你是「多人旅行协同 Agent」里的 Replanner Agent (增量重排版)。
+职责：当行程中发生突发事件时，在保持「已冻结天数」完全不变的前提下，对「待调整天数」做最小扰动调整。
 严格输出 JSON，不要 markdown、不要额外解释。
+
+核心原则：
+1. **增量重排**：你收到的方案包含 `frozen_days` (绝对不可修改) 和 `dirty_days` (你可以修改)。你的任务是重写 `dirty_days`。
+2. **最小扰动**：尽可能保留 `dirty_days` 中未受事件影响的活动。
+3. **营业时间硬约束**：所有新安排的活动必须在 POI 的 `open_time` 范围内。
 
 期望输出 schema：
 {
   "replan_diff": {
-    "event": "day3_rain",
-    "event_title": "第 3 天下雨",
-    "impact_range": "Day 3 户外活动",
-    "disturbance": "小",
-    "most_affected": ["A:-6","B:-2","C:-1","D:0"],
-    "compensated":   ["B:+5","C:+2","D:+1","A:0"],
-    "how_adjusted": [
-      "将 Day 3 户外活动替换为室内行程",
-      "延排日落拍摄至 Day 4 作为补偿",
-      "保持总预算与每日节奏基本不变",
-      "最小化成员偏好与体验扰动"
-    ],
-    "original_day_plans": [ { day:3, ... 原 DayPlan } ],
-    "new_day_plans":      [ { day:3, ... 新 DayPlan }, { day:4, ... 调整后 DayPlan } ]
+    "event_summary": "事件 A, B 叠加影响",
+    "impact_range": "Day 3 之后的所有户外活动",
+    "disturbance": "小" | "中" | "大",
+    "most_affected": ["A:-6","B:-2"],
+    "compensated":   ["B:+5","C:+2"],
+    "how_adjusted": ["由于 X 景点关闭，换成了 Y", "由于成员 Z 退出，取消了其专属补偿活动"],
+    "original_dirty_plans": [ { "day": 3, ... } ],
+    "new_dirty_plans":      [ { "day": 3, ... } ]
   },
-  "new_proposal": { ... 完整的新 Proposal，替换 state.proposal ... }
+  "new_proposal": { 
+     "per_day": [...] // 包含完整的 frozen_days + new_dirty_plans
+  }
 }
-
-约束：
-- most_affected / compensated 的 key 顺序都是 A/B/C/D，值形如 "+5" / "-6" / "0"。
-- disturbance 只能是 "小" / "中" / "大"。
-- new_proposal 只需调整 Day 3 和 Day 4，其他日保持不变。
 """
 
 
 def user_prompt_replanner(state: TripState) -> str:
-    event = state.get("events", ["day3_rain"])[0] if state.get("events") else "day3_rain"
+    anchor_day = state.get("anchor_day", 1)
+    proposal = state.get("proposal", {})
+    per_day = proposal.get("per_day", [])
+    
+    frozen_days = per_day[:anchor_day - 1]
+    dirty_days = per_day[anchor_day - 1:]
+    
+    new_events = [e for e in state.get("events", []) if e.get("id") in state.get("new_event_ids", [])]
+    event_history = [e for e in state.get("events", []) if e.get("id") not in state.get("new_event_ids", [])]
+
     return (
-        f"事件：{event}\n\n"
-        f"原方案：\n{json.dumps(state.get('proposal', {}), ensure_ascii=False, indent=2)}\n\n"
-        f"原评分：\n{json.dumps(state.get('scores', {}), ensure_ascii=False, indent=2)}\n\n"
-        f"请输出最小扰动的新方案 + diff 说明。新方案评分应略高于原方案（因为更贴合当天体验）。"
+        f"【当前状态】\n"
+        f"时间锚点：Day {anchor_day} (Day 1 到 Day {anchor_day-1} 已冻结，不可修改)\n"
+        f"新发事件：{json.dumps(new_events, ensure_ascii=False, indent=2)}\n"
+        f"历史事件：{json.dumps(event_history, ensure_ascii=False, indent=2)}\n\n"
+        f"【原方案上下文】\n"
+        f"已冻结天数 (frozen_days)：{json.dumps(frozen_days, ensure_ascii=False, indent=2)}\n"
+        f"待调整天数 (dirty_days)：{json.dumps(dirty_days, ensure_ascii=False, indent=2)}\n\n"
+        f"【约束信息】\n"
+        f"成员画像：{json.dumps(state.get('profiles', []), ensure_ascii=False, indent=2)}\n"
+        f"POI 候选池：{json.dumps(state.get('poi_pool', {}), ensure_ascii=False, indent=2)}\n\n"
+        f"请基于上述信息，对 dirty_days 进行重排，并输出完整的 new_proposal (包含 frozen + new_dirty)。"
     )
-
-
-EXPECTED_OUTPUT_SCHEMA_REPLANNER = """见 SYS_REPLANNER，顶层是 {"replan_diff": ReplanDiff, "new_proposal": Proposal}"""

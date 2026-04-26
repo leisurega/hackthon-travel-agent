@@ -8,42 +8,64 @@ P1 defines this file. P2 and P3 are read-only consumers:
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from typing_extensions import TypedDict
+
+
+# ---------------------------------------------------------------------------
+# Events & History
+# ---------------------------------------------------------------------------
+
+class EventItem(TypedDict, total=False):
+    id: str                     # uuid4 hex
+    type: str                   # "poi_closed" | "member_drop" | "schedule_shift" | "custom"
+    title: str                  # Human readable title
+    params: Dict[str, Any]      # Event specific parameters
+    occurs_on_day: int          # 1-based day index
+    created_at: str             # ISO timestamp
+    applied_in_revision: int    # Which proposal revision this event was first applied in
+
+
+class ProposalSnapshot(TypedDict):
+    revision: int               # 0 for baseline, 1+ for replans
+    created_at: str             # ISO timestamp
+    proposal: Proposal
+    triggered_by_event_ids: List[str] # IDs of events that triggered this revision
 
 
 # ---------------------------------------------------------------------------
 # Profile
 # ---------------------------------------------------------------------------
 
-class HardConstraints(TypedDict):
-    budget_cap: int            # CNY, per person overall
-    diet: List[str]            # ["不吃香菜", "素食", ...]
-    daily_walk_km_max: float   # e.g. 8.0
-    latest_rest_time: str      # "23:30"
-
-
-class StrongPreferences(TypedDict):
-    city_walking: int          # 0-100
-    museum: int                # 0-100
-    photography_golden_hour: int  # 0-100
-    free_time: int             # 0-100
+class CompensationPreference(TypedDict):
+    trigger: str               # "未拍到日落"
+    action: str                # "次日清晨独自西湖摄影 90min"
+    pref_key: Optional[str]    # optional link to a strong_preference key
 
 
 class UserProfile(TypedDict):
     user_id: str               # "A" / "B" / "C" / "D"
     display_name: str          # "A 用户"
     role: str                  # "主导成员" | "成员"
-    trip_goal: List[str]       # subset of ["放松","美食","摄影","博物馆","购物","深度文化"]
-    hard_constraints: HardConstraints
-    strong_preferences: StrongPreferences
-    anti_preferences: List[str]      # ["高密度行程","夜生活","高频换酒店"]
-    negotiable_range: List[str]      # ["可接受 0-2 小时博物馆", ...]
-    key_tags: List[str]              # ["放松导向","摄影偏好","预算敏感"]
-    confidence: int                  # 0-100, 画像可靠度
-    radar: List[int]                 # 6-dim radar values 0-100 in order:
-                                      # [放松,美食,摄影,博物馆,购物,深度文化]
-    completeness: int                # 0-100, 画像完整度
+    role_tag: Optional[str]    # "西湖摄影慢游型"
+    protection_level: str      # "high" | "medium" | "low"
+    core_story: Optional[str]  # "画像背景描述"
+    
+    # 6-dimension structure
+    hard_constraints: dict     # {budget_max: 5000, walk_km_max: 6.0, midday_rest: true, ...}
+    strong_preferences: dict   # {photography: 1.0, museum: 0.8, ...} (0-1 range)
+    anti_preferences: dict     # {crowds: 1.0, coriander: 1.0, ...} (0-1 range)
+    negotiable_range: dict     # {museum_hours: [0, 2], ...}
+    
+    scoring_weights: dict      # {T: 0.15, B: 0.15, P: 0.20, I: 0.25, F: 0.15, S: 0.10}
+    compensation_preference: List[CompensationPreference]
+    
+    # Deprecated / Legacy fields (kept for migration)
+    trip_goal: Optional[List[str]]
+    key_tags: Optional[List[str]]
+    radar: Optional[List[int]]
+    completeness: Optional[int]
+    confidence: Optional[int]
 
 
 # ---------------------------------------------------------------------------
@@ -90,9 +112,11 @@ class DayPlan(TypedDict):
     day: int                   # 1..7
     city: str                  # "巴黎"
     theme: str                 # "抵达巴黎，初识浪漫之都"
-    morning: ActivityBlock
-    noon: ActivityBlock
-    evening: ActivityBlock
+    morning: ActivityBlock      # 09:00 主活动
+    lunch: ActivityBlock        # 12:00 午餐
+    afternoon: ActivityBlock    # 15:00 下午活动
+    dinner: ActivityBlock       # 18:00 晚餐
+    night: ActivityBlock        # 20:00 夜间活动（夜游/酒吧/夜市/灯光秀）
 
 
 class Proposal(TypedDict):
@@ -141,16 +165,22 @@ class Explanations(TypedDict):
 # Replan (dynamic re-routing output)
 # ---------------------------------------------------------------------------
 
-class ReplanDiff(TypedDict):
+class ReplanDiff(TypedDict, total=False):
+    # New fields (incremental replan)
+    event_summary: str
+    original_dirty_plans: List[DayPlan]
+    new_dirty_plans: List[DayPlan]
+    # Legacy fields (kept for back-compat with ProposalDetail page)
     event: str                               # "day3_rain"
     event_title: str                         # "第 3 天下雨"
+    original_day_plans: List[DayPlan]        # Only the affected days
+    new_day_plans: List[DayPlan]             # Replacements / additions
+    # Common fields
     impact_range: str                        # "Day 3 户外活动"
     disturbance: str                         # "小" | "中" | "大"
     most_affected: List[str]                 # ["A:-6","B:-2","C:-1","D:0"]
     compensated: List[str]                   # ["B:+5","C:+2","D:+1","A:0"]
     how_adjusted: List[str]                  # 4 bullets, shown on the right panel
-    original_day_plans: List[DayPlan]        # Only the affected days
-    new_day_plans: List[DayPlan]             # Replacements / additions
     old_score: Optional[Score]
     new_score: Optional[Score]
 
@@ -187,10 +217,25 @@ class TripState(TypedDict, total=False):
     explanations: Explanations
 
     # Populated by API when user triggers an event
-    events: List[str]               # ["day3_rain"]
+    start_date: str                 # "2026-04-25"
+    baseline_proposal: Optional[Proposal]
+    proposal_history: List[ProposalSnapshot]
+    events: List[EventItem]         # List of EventItem instead of str
 
     # Populated by replanner_agent + rescore
     replan_diff: Optional[ReplanDiff]
 
+    # Lifecycle
+    adopted_at: Optional[str]       # ISO timestamp when user adopted the plan
+
     # Agent trace for frontend debug panel (appended by each node)
     agent_trace: List[str]
+
+    # Replan-time hints (set by API, consumed by replanner_agent, cleared after use)
+    anchor_day: int
+    new_event_ids: List[str]
+
+    # V2 Evaluation & Conflicts
+    conflicts_v2: Optional[dict]
+    keywords: Optional[dict]
+    evaluation_report: Optional[dict]

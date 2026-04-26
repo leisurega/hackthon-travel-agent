@@ -1,0 +1,168 @@
+{
+  "_schema_version": 2,
+  "profiles": [
+    {
+      "user_id": "A",
+      "display_name": "linda",
+      "role": "主导成员",
+      "role_tag": "摄影偏好",
+      "protection_level": "medium",
+      "core_story": "目标: 放松, 摄影",
+      "hard_constraints": {
+        "budget_max": 12000,
+        "dietary": [
+          "不吃香菜"
+        ],
+        "walk_km_max": 8,
+        "latest_rest_time": "23:30"
+      },
+      "strong_preferences": {
+        "city_walking": 0.85,
+        "museum": 0.6,
+        "photography_golden_hour": 0.95,
+        "free_time": 0.7,
+        "solo_time": 0.8,
+        "动物园": 0.5
+      },
+      "anti_preferences": {
+        "高密度行程": 1
+      },
+      "negotiable_range": {
+        "item_0": "可接受 0-2 小时博物馆",
+        "accept_split_action": true
+      },
+      "scoring_weights": {
+        "T": 0.15,
+        "B": 0.15,
+        "P": 0.2,
+        "I": 0.25,
+        "F": 0.15,
+        "S": 0.1
+      },
+      "compensation_preference": [],
+      "trip_goal": [
+        "放松",
+        "摄影"
+      ],
+      "key_tags": [
+        "摄影偏好"
+      ],
+      "radar": [
+        80,
+        60,
+        90,
+        50,
+        30,
+        70
+      ],
+      "completeness": 85,
+      "confidence": 90
+    },
+    {
+      "user_id": "B",
+      "display_name": "阿文",
+      "role": "成员",
+      "role_tag": "文化导向",
+      "protection_level": "medium",
+      "core_story": "基于旧画像迁移。目标: 博物馆, 深度文化",
+      "hard_constraints": {
+        "budget_max": 15000,
+        "dietary": [],
+        "walk_km_max": 15.0,
+        "latest_rest_time": "00:00"
+      },
+      "strong_preferences": {
+        "city_walking": 0.6,
+        "museum": 0.95,
+        "photography_golden_hour": 0.4,
+        "free_time": 0.5
+      },
+      "anti_preferences": {
+        "购物": 1.0
+      },
+      "negotiable_range": {
+        "item_0": "可接受酒店稍远"
+      },
+      "scoring_weights": {
+        "T": 0.15,
+        "B": 0.15,
+        "P": 0.2,
+        "I": 0.25,
+        "F": 0.15,
+        "S": 0.1
+      },
+      "compensation_preference": [],
+      "trip_goal": [
+        "博物馆",
+        "深度文化"
+      ],
+      "key_tags": [
+        "文化导向"
+      ],
+      "radar": [
+        40,
+        50,
+        40,
+        95,
+        20,
+        90
+      ],
+      "completeness": 80,
+      "confidence": 85
+    },
+    {
+      "user_id": "C",
+      "display_name": "阿陈",
+      "role": "成员",
+      "role_tag": "预算敏感",
+      "protection_level": "high",
+      "core_story": "基于旧画像迁移。目标: 美食, 放松",
+      "hard_constraints": {
+        "budget_max": 8000,
+        "dietary": [
+          "海鲜过敏"
+        ],
+        "walk_km_max": 5.0,
+        "latest_rest_time": "22:00"
+      },
+      "strong_preferences": {
+        "city_walking": 0.3,
+        "museum": 0.4,
+        "photography_golden_hour": 0.5,
+        "free_time": 0.9
+      },
+      "anti_preferences": {
+        "高强度步行": 1.0
+      },
+      "negotiable_range": {
+        "item_0": "可接受分头行动"
+      },
+      "scoring_weights": {
+        "T": 0.15,
+        "B": 0.15,
+        "P": 0.2,
+        "I": 0.25,
+        "F": 0.15,
+        "S": 0.1
+      },
+      "compensation_preference": [],
+      "trip_goal": [
+        "美食",
+        "放松"
+      ],
+      "key_tags": [
+        "预算敏感"
+      ],
+      "radar": [
+        90,
+        95,
+        30,
+        40,
+        50,
+        40
+      ],
+      "completeness": 90,
+      "confidence": 95
+    }
+  ]
+}

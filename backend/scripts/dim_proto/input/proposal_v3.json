@@ -1,0 +1,579 @@
+{
+  "plan_summary": {
+    "trip_id": "hz_7day_3f_v3",
+    "total_days": 7,
+    "total_budget_cny": {
+      "user_A_estimated": 3800,
+      "user_B_estimated": 4400,
+      "user_C_estimated": 4350
+    },
+    "compliance": {
+      "daily_walk_km_max_6": true,
+      "must_have_midday_rest_90min": true,
+      "no_two_high_intensity_days_in_a_row": true,
+      "no_coriander": true,
+      "no_raw_food": true,
+      "light_taste": true,
+      "must_have_highlight_slots": true,
+      "must_have_experiences": true,
+      "must_not_pure_photo_trip": true,
+      "budget_max_4500": true
+    }
+  },
+  "daily_plans": [
+    {
+      "day": 1,
+      "theme": "西湖日：清晨漫步 + 西湖落日",
+      "schedule": [
+        {
+          "time": "08:30",
+          "activity": "酒店早餐"
+        },
+        {
+          "time": "09:30",
+          "activity": "西湖白堤漫步（断桥残雪-孤山）, 步行约1.5km, 强度低",
+          "location": "hz_west_lake",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "11:30",
+          "activity": "午餐：外婆家（西湖店）, 清淡杭帮菜, 无香菜, 无生食",
+          "location": "hz_waipojia",
+          "cost": 80,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "13:00",
+          "activity": "午休90分钟",
+          "location": "酒店",
+          "participants": [
+            "user_C"
+          ]
+        },
+        {
+          "time": "14:30",
+          "activity": "自由时间-林然和周屿可选择继续西湖漫步或探索周边",
+          "participants": [
+            "user_A",
+            "user_B"
+          ]
+        },
+        {
+          "time": "17:30",
+          "activity": "西湖日落拍摄（西泠桥或长桥公园）",
+          "location": "hz_west_lake",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "18:30",
+          "activity": "晚餐：楼外楼（孤山店）, 杭帮菜, 注意清淡可选",
+          "location": "hz_louwailou",
+          "cost": 220,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "20:30",
+          "activity": "返回酒店",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        }
+      ],
+      "daily_walk_km": 4.5,
+      "note": "满足林然的西湖落日；陈安午休90分钟；整体强度低"
+    },
+    {
+      "day": 2,
+      "theme": "灵隐深度 + 飞来峰",
+      "schedule": [
+        {
+          "time": "08:30",
+          "activity": "酒店出发"
+        },
+        {
+          "time": "09:30",
+          "activity": "灵隐寺深度游览（约2小时）",
+          "location": "hz_lingyin_temple",
+          "cost": 75,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "11:30",
+          "activity": "飞来峰游览（约1小时）",
+          "location": "hz_feilaifeng",
+          "cost": 45,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "12:30",
+          "activity": "午餐：龙井村农家茶餐, 提供清淡素食",
+          "location": "hz_longjing_village",
+          "cost": 150,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "13:30",
+          "activity": "午休90分钟",
+          "location": "茶村休息区或酒店",
+          "participants": [
+            "user_C"
+          ]
+        },
+        {
+          "time": "15:00",
+          "activity": "龙井村茶文化体验（品茶、参观茶园）",
+          "location": "hz_longjing_village",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "17:00",
+          "activity": "返回酒店",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "18:30",
+          "activity": "晚餐：外婆家或其他清淡杭帮菜",
+          "location": "hz_waipojia",
+          "cost": 80,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        }
+      ],
+      "daily_walk_km": 5.5,
+      "note": "满足周屿的灵隐寺和茶文化；强度中等；陈安午休90分钟"
+    },
+    {
+      "day": 3,
+      "theme": "博物馆与丝绸文化日（低强度）",
+      "schedule": [
+        {
+          "time": "08:30",
+          "activity": "酒店早餐"
+        },
+        {
+          "time": "09:30",
+          "activity": "中国丝绸博物馆（约1.5小时）",
+          "location": "hz_silk_museum",
+          "cost": 0,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "11:00",
+          "activity": "前往浙江省博物馆（孤山馆）",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "12:00",
+          "activity": "午餐：浙江省博物馆附近餐厅（清淡）",
+          "cost": 60,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "13:00",
+          "activity": "午休90分钟（陈安回酒店或博物馆休息区）",
+          "participants": [
+            "user_C"
+          ]
+        },
+        {
+          "time": "14:30",
+          "activity": "浙江省博物馆参观（约1小时）",
+          "location": "hz_zj_museum",
+          "cost": 0,
+          "participants": [
+            "user_A",
+            "user_B"
+          ]
+        },
+        {
+          "time": "16:00",
+          "activity": "自由活动/咖啡时间",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "18:00",
+          "activity": "晚餐：外婆家或其他",
+          "location": "hz_waipojia",
+          "cost": 80,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "19:30",
+          "activity": "回酒店",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        }
+      ],
+      "daily_walk_km": 3.5,
+      "note": "低强度日，满足文化兴趣"
+    },
+    {
+      "day": 4,
+      "theme": "九溪烟树 + 城市漫步（上午）+ 下午自由",
+      "schedule": [
+        {
+          "time": "08:30",
+          "activity": "酒店出发"
+        },
+        {
+          "time": "09:30",
+          "activity": "九溪烟树漫步（约1.5小时，步行约2km）",
+          "location": "hz_jiuxi",
+          "cost": 0,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "11:00",
+          "activity": "返回市区",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "12:00",
+          "activity": "午餐：清淡简餐",
+          "cost": 50,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "13:00",
+          "activity": "午休90分钟",
+          "participants": [
+            "user_C"
+          ]
+        },
+        {
+          "time": "14:30",
+          "activity": "分头行动：林然和周屿前往雷峰塔（可选，林然拍照），陈安自由活动或酒店休息",
+          "location": "hz_leifeng_pagoda",
+          "cost": 40,
+          "participants": [
+            "user_A",
+            "user_B"
+          ]
+        },
+        {
+          "time": "17:30",
+          "activity": "集合晚餐",
+          "cost": 80,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "19:00",
+          "activity": "回酒店",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        }
+      ],
+      "daily_walk_km": 4.0,
+      "note": "上午九溪低强度，下午分头行动"
+    },
+    {
+      "day": 5,
+      "theme": "西溪湿地半日 + 下午休闲",
+      "schedule": [
+        {
+          "time": "08:30",
+          "activity": "酒店出发"
+        },
+        {
+          "time": "09:30",
+          "activity": "西溪湿地（乘船或电瓶车，减少步行, 步行约3km）",
+          "location": "hz_xixi",
+          "cost": 80,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "12:00",
+          "activity": "午餐：西溪附近餐厅（清淡）",
+          "cost": 60,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "13:00",
+          "activity": "午休90分钟",
+          "participants": [
+            "user_C"
+          ]
+        },
+        {
+          "time": "14:30",
+          "activity": "自由活动（休息或咖啡）",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "17:30",
+          "activity": "西湖清晨补偿：安排明日清晨西湖漫步（补偿林然）",
+          "participants": [],
+          "note": "补偿计划"
+        },
+        {
+          "time": "18:00",
+          "activity": "晚餐：龙井村农家茶餐或其他",
+          "location": "hz_longjing_village",
+          "cost": 150,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "19:30",
+          "activity": "回酒店",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        }
+      ],
+      "daily_walk_km": 4.5,
+      "note": "西溪湿地有电瓶车减少步行；为林然补偿明日清晨西湖"
+    },
+    {
+      "day": 6,
+      "theme": "补偿日：清晨西湖漫步 + 雷峰塔 + 文化自由",
+      "schedule": [
+        {
+          "time": "08:30",
+          "activity": "清晨西湖漫步（补偿林然，拍摄晨景）",
+          "location": "hz_west_lake",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "10:00",
+          "activity": "早餐",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "11:00",
+          "activity": "雷峰塔（文化 + 拍照）",
+          "location": "hz_leifeng_pagoda",
+          "cost": 40,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "12:30",
+          "activity": "午餐：楼外楼或外婆家",
+          "cost": 120,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "14:00",
+          "activity": "午休90分钟",
+          "participants": [
+            "user_C"
+          ]
+        },
+        {
+          "time": "15:30",
+          "activity": "自由活动（林然和周屿可探索南宋御街或河坊街）",
+          "participants": [
+            "user_A",
+            "user_B"
+          ]
+        },
+        {
+          "time": "18:00",
+          "activity": "晚餐：清淡简餐",
+          "cost": 60,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "19:30",
+          "activity": "回酒店",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        }
+      ],
+      "daily_walk_km": 5.0,
+      "note": "补偿林然清晨西湖；雷峰塔满足文化+拍照"
+    },
+    {
+      "day": 7,
+      "theme": "最后半天：轻松收尾",
+      "schedule": [
+        {
+          "time": "08:30",
+          "activity": "酒店早餐"
+        },
+        {
+          "time": "09:30",
+          "activity": "自由活动：购物或最后一拍（林然可能补拍）",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "11:00",
+          "activity": "整理行李退房",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "12:00",
+          "activity": "午餐：外婆家",
+          "location": "hz_waipojia",
+          "cost": 80,
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        },
+        {
+          "time": "13:30",
+          "activity": "前往机场/车站",
+          "participants": [
+            "user_A",
+            "user_B",
+            "user_C"
+          ]
+        }
+      ],
+      "daily_walk_km": 2.0,
+      "note": "最后半日轻松，确保所有预算未超"
+    }
+  ],
+  "compensation_fulfilled": {
+    "user_A": "第5天提到补偿计划，第6天清晨西湖漫步实现",
+    "user_B": "第2天灵隐寺+茶文化，第3天博物馆，第6天雷峰塔，满足文化需求",
+    "user_C": "每日午休90分钟，每日步行≤6km，无连续高强度，预算未超4500"
+  },
+  "budget_breakdown": {
+    "user_A": {
+      "total_estimated": 3800,
+      "details": "餐饮约1500，门票约200，交通约800，其他约1300"
+    },
+    "user_B": {
+      "total_estimated": 4400,
+      "details": "餐饮约1800，门票约400，交通约1000，其他约1200"
+    },
+    "user_C": {
+      "total_estimated": 4350,
+      "details": "餐饮约1500，门票约240，交通约1000，其他约1610"
+    }
+  }
+}

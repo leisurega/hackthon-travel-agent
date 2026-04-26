@@ -1,0 +1,178 @@
+{
+  "dimension_conflicts": [
+    {
+      "dimension": "时间与可用性",
+      "dim_key": "T",
+      "overall_score": 70,
+      "tier": "强软",
+      "involved_users": [
+        "user_A",
+        "user_C"
+      ],
+      "summary": "user_A 最晚回酒店时间23:00且不能连续早起，user_C 最晚回酒店22:00且必须有午休（约90分钟），在早出和晚间行程安排上存在冲突。",
+      "suggestion": "优先保证午休，将高强度活动安排在上午或下午早期；若需要早出，则次日安排较晚出发或休息日；晚上尽量在22:00前结束活动，或允许user_A单独晚归。"
+    },
+    {
+      "dimension": "预算与消费舒适度",
+      "dim_key": "B",
+      "overall_score": 85,
+      "tier": "弱软",
+      "involved_users": [
+        "user_C"
+      ],
+      "summary": "user_C 预算上限4500元且对消费敏感，其他成员未明确预算，但可能产生高消费活动冲突。",
+      "suggestion": "整体控制在中低预算范围，选择平价餐饮和免费/低价景点；必要高价活动可自愿自费参与。"
+    },
+    {
+      "dimension": "节奏与体力承受",
+      "dim_key": "P",
+      "overall_score": 55,
+      "tier": "硬",
+      "involved_users": [
+        "user_A",
+        "user_B",
+        "user_C"
+      ],
+      "summary": "user_C 日步行最多6km且必须午休，user_A 最多8km且不能连续早起，user_B 可接受6-12km且可早起。三人对步行强度、连续高强度和午休需求存在显著矛盾。",
+      "suggestion": "每日行程以user_C的体力为基准（≤6km，中间90分钟午休），user_B可在强度较大时单独参与文化深度活动；避免连续两天高强度，user_A的摄影需求尽量安排在上午或傍晚低强度时段。"
+    },
+    {
+      "dimension": "兴趣覆盖与高光体验",
+      "dim_key": "I",
+      "overall_score": 60,
+      "tier": "硬",
+      "involved_users": [
+        "user_A",
+        "user_B",
+        "user_C"
+      ],
+      "summary": "user_A 必须安排西湖日落与晨昏摄影，user_B 必须包含灵隐寺/寺庙文化深入体验和茶文化体验，user_C 没有硬性文化兴趣要求但无法承受长时间徒步或参观。三者核心兴趣冲突：摄影需特定光影时间，文化需长时间深入，体力有限者难以兼顾。",
+      "suggestion": "在最佳时间（日落、清晨）优先安排user_A的摄影；文化深度活动可安排在上午或午休后，但需控制时长（如1.5-2小时）；必要时分头行动，user_B单独参加文化导览。"
+    },
+    {
+      "dimension": "饮食与健康安全",
+      "dim_key": "F",
+      "overall_score": 85,
+      "tier": "弱软",
+      "involved_users": [
+        "user_A",
+        "user_C"
+      ],
+      "summary": "user_A 不吃香菜，user_C 不吃生食且偏好清淡口味，没有直接冲突，但需注意共同用餐时的菜品选择。",
+      "suggestion": "点菜时避免香菜，选择熟食且口味清淡的餐厅，可满足双方需求。"
+    },
+    {
+      "dimension": "社交方式与自主空间",
+      "dim_key": "S",
+      "overall_score": 90,
+      "tier": "弱软",
+      "involved_users": [],
+      "summary": "所有成员均接受分头行动，无社交冲突。",
+      "suggestion": "无需特别干预，按需分头可缓解其他冲突。"
+    }
+  ],
+  "user_dim_pressure": {
+    "user_A": {
+      "T": 20,
+      "B": 10,
+      "P": 40,
+      "I": 30,
+      "F": 0,
+      "S": 0
+    },
+    "user_B": {
+      "T": 10,
+      "B": 10,
+      "P": 30,
+      "I": 40,
+      "F": 0,
+      "S": 0
+    },
+    "user_C": {
+      "T": 30,
+      "B": 20,
+      "P": 60,
+      "I": 20,
+      "F": 0,
+      "S": 0
+    }
+  },
+  "tiered_constraints": {
+    "hard": [
+      {
+        "user": "user_A",
+        "dim": "F",
+        "item": "no_coriander"
+      },
+      {
+        "user": "user_A",
+        "dim": "T",
+        "item": "latest_return_hotel_time: 23:00"
+      },
+      {
+        "user": "user_A",
+        "dim": "T",
+        "item": "no_consecutive_early_start"
+      },
+      {
+        "user": "user_A",
+        "dim": "P",
+        "item": "daily_walk_km_max: 8"
+      },
+      {
+        "user": "user_A",
+        "dim": "I",
+        "item": "must_have_highlight_slots: west_lake_sunset_photo, morning_or_evening_lake_photo"
+      },
+      {
+        "user": "user_B",
+        "dim": "I",
+        "item": "must_have_experiences: lingyin_or_temple_culture_deep_experience, tea_culture_experience"
+      },
+      {
+        "user": "user_B",
+        "dim": "I",
+        "item": "must_have_highlight_count: 2"
+      },
+      {
+        "user": "user_B",
+        "dim": "I",
+        "item": "must_not: only_surface_sightseeing, pure_photo_trip"
+      },
+      {
+        "user": "user_C",
+        "dim": "B",
+        "item": "budget_max: 4500"
+      },
+      {
+        "user": "user_C",
+        "dim": "P",
+        "item": "daily_walk_km_max: 6"
+      },
+      {
+        "user": "user_C",
+        "dim": "P",
+        "item": "must_have_midday_rest, midday_rest_minutes: 90"
+      },
+      {
+        "user": "user_C",
+        "dim": "T",
+        "item": "latest_return_hotel_time: 22:00"
+      },
+      {
+        "user": "user_C",
+        "dim": "F",
+        "item": "no_raw_food, light_taste"
+      },
+      {
+        "user": "user_C",
+        "dim": "P",
+        "item": "must_not: two_high_intensity_days_in_a_row, long_hiking, late_return"
+      }
+    ],
+    "strong_soft": [],
+    "weak_soft": []
+  },
+  "feasibility_status": "Conditional",
+  "feasibility_reason": "节奏与体力承受维度存在硬冲突（user_C步行上限6km且必须午休 vs 其他成员更高强度需求），兴趣覆盖硬冲突（user_A摄影与user_B文化深度在时间上可能重叠）。通过分头行动、调整时间分配（如严格午休、控制步行量）和补偿措施可缓解，但需精心规划。"
+}

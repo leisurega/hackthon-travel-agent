@@ -1,0 +1,182 @@
+{
+  "dimension_conflicts": [
+    {
+      "dimension": "时间与可用性",
+      "dim_key": "T",
+      "overall_score": 60,
+      "tier": "强软",
+      "involved_users": [
+        "C",
+        "D"
+      ],
+      "summary": "C最晚休息时间22:00，D最晚01:00，C早起晚归偏好与D冲突。",
+      "suggestion": "安排C早睡早起，D可以晚归，分头活动或调整夜间行程。"
+    },
+    {
+      "dimension": "预算与消费舒适度",
+      "dim_key": "B",
+      "overall_score": 40,
+      "tier": "强软",
+      "involved_users": [
+        "C",
+        "D"
+      ],
+      "summary": "C预算上限8000，D预算上限20000，且C预算敏感，D可接受高价，消费差异大。",
+      "suggestion": "推荐共享部分平价活动，高消费项目可让D自行选择。"
+    },
+    {
+      "dimension": "节奏与体力承受",
+      "dim_key": "P",
+      "overall_score": 30,
+      "tier": "硬",
+      "involved_users": [
+        "A",
+        "B",
+        "C"
+      ],
+      "summary": "C每日步行上限5km，A上限8km，B上限15km，C抗拒高强度步行，A和B均希望一定步行量。",
+      "suggestion": "整体行程以C体力为准，安排低强度，A和B可增加晨跑或分头增加步行。"
+    },
+    {
+      "dimension": "兴趣覆盖与高光体验",
+      "dim_key": "I",
+      "overall_score": 40,
+      "tier": "强软",
+      "involved_users": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "summary": "A偏好摄影，B偏好博物馆，C偏好美食放松，D偏好购物，且B和D分别反感购物和博物馆。",
+      "suggestion": "建议分头行动，每日设定共同集合时间，满足各自兴趣。"
+    },
+    {
+      "dimension": "饮食与健康安全",
+      "dim_key": "F",
+      "overall_score": 70,
+      "tier": "硬",
+      "involved_users": [
+        "A",
+        "C"
+      ],
+      "summary": "A不吃香菜，C海鲜过敏，可能影响餐厅选择。",
+      "suggestion": "选择餐厅时避开香菜和海鲜，或单独为C准备无海鲜餐。"
+    },
+    {
+      "dimension": "社交方式与自主空间",
+      "dim_key": "S",
+      "overall_score": 80,
+      "tier": "弱软",
+      "involved_users": [
+        "C"
+      ],
+      "summary": "C可接受分头行动，其他成员未明确偏好，整体可协调。",
+      "suggestion": "允许每天灵活分头，集体活动以晚餐或夜景为主。"
+    }
+  ],
+  "user_dim_pressure": {
+    "A": {
+      "T": 10,
+      "B": 20,
+      "P": 30,
+      "I": 30,
+      "F": 0,
+      "S": 0
+    },
+    "B": {
+      "T": 10,
+      "B": 0,
+      "P": 0,
+      "I": 40,
+      "F": 0,
+      "S": 0
+    },
+    "C": {
+      "T": 50,
+      "B": 80,
+      "P": 80,
+      "I": 50,
+      "F": 20,
+      "S": 0
+    },
+    "D": {
+      "T": 40,
+      "B": 20,
+      "P": 10,
+      "I": 60,
+      "F": 0,
+      "S": 0
+    }
+  },
+  "tiered_constraints": {
+    "hard": [
+      {
+        "user": "A",
+        "dim": "F",
+        "item": "不吃香菜"
+      },
+      {
+        "user": "C",
+        "dim": "F",
+        "item": "海鲜过敏"
+      },
+      {
+        "user": "C",
+        "dim": "P",
+        "item": "每日步行上限5km"
+      }
+    ],
+    "strong_soft": [
+      {
+        "user": "A",
+        "dim": "T",
+        "item": "最晚23:30"
+      },
+      {
+        "user": "C",
+        "dim": "T",
+        "item": "最晚22:00"
+      },
+      {
+        "user": "D",
+        "dim": "T",
+        "item": "最晚01:00"
+      },
+      {
+        "user": "C",
+        "dim": "B",
+        "item": "预算上限8000"
+      },
+      {
+        "user": "D",
+        "dim": "B",
+        "item": "预算上限20000"
+      },
+      {
+        "user": "A",
+        "dim": "I",
+        "item": "摄影黄金时段偏好"
+      },
+      {
+        "user": "B",
+        "dim": "I",
+        "item": "博物馆深度偏好"
+      },
+      {
+        "user": "D",
+        "dim": "I",
+        "item": "购物偏好"
+      }
+    ],
+    "weak_soft": [
+      {
+        "user": "C",
+        "dim": "S",
+        "item": "可接受分头行动"
+      }
+    ]
+  },
+  "feasibility_status": "Conditional",
+  "feasibility_reason": "存在硬冲突：C的体力上限与A、B的步行需求冲突；预算差距大；兴趣对立。可通过分头行动、调整节奏满足，但需大量协调。"
+}

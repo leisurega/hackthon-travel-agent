@@ -1,0 +1,57 @@
+{
+  "final_group_score": 60.06,
+  "status": "Reject",
+  "status_reasons": [
+    "存在 must_have 缺失",
+    "最低个人满意度(16.5)低于 55"
+  ],
+  "metrics": {
+    "s_avg": 66.44,
+    "s_min": 16.5,
+    "fairness": 70.0,
+    "execution_efficiency": 90,
+    "robustness": 85
+  },
+  "per_user": [
+    {
+      "user_id": "A",
+      "base_score": 84.25,
+      "penalties": 0,
+      "penalty_details": [],
+      "final_satisfaction": 84.25,
+      "must_have_missing": []
+    },
+    {
+      "user_id": "B",
+      "base_score": 83.5,
+      "penalties": 0,
+      "penalty_details": [],
+      "final_satisfaction": 83.5,
+      "must_have_missing": []
+    },
+    {
+      "user_id": "C",
+      "base_score": 61.5,
+      "penalties": 45,
+      "penalty_details": [
+        "连续妥协 ≥2 天 (-15)",
+        "全程无高光 (-10)",
+        "保护型用户硬约束受损 (-20)"
+      ],
+      "final_satisfaction": 16.5,
+      "must_have_missing": [
+        "放松"
+      ]
+    },
+    {
+      "user_id": "D",
+      "base_score": 81.5,
+      "penalties": 0,
+      "penalty_details": [],
+      "final_satisfaction": 81.5,
+      "must_have_missing": [
+        "购物"
+      ]
+    }
+  ]
+}

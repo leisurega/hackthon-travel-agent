@@ -1,15 +1,16 @@
 """LangGraph StateGraph wiring for the Travel Coordination Agent.
 
 Flow:
-    START -> profile -> conflict -> generator -> scorer -> explainer
+    START -> profile -> conflict -> keyword -> generator -> evaluator -> explainer
     explainer -- no event  --> END
-    explainer -- has event --> replanner -> rescore -> END
+    explainer -- has event --> replanner -> evaluator -> END
 
 Each LLM node is a thin wrapper over call_llm that preserves the full
 prompt + schema contract even when USE_MOCK=true.
 """
 from __future__ import annotations
 
+import time
 from typing import Any, Dict
 
 from langgraph.graph import END, StateGraph
@@ -18,71 +19,65 @@ from .agents import (
     conflict_agent,
     explainer_agent,
     generator_agent,
+    keyword_agent,
+    evaluator_agent,
     profile_agent,
     replanner_agent,
+    time_fixer_agent,
 )
-from .scoring import score
 from .state import TripState
 
 
-def _scorer_node(state: TripState) -> TripState:
-    trace = state.get("agent_trace", []) or []
-    trace.append("scorer_node: computing score")
-    result = score(
-        state.get("proposal", {}),
-        state.get("profiles", []),
-        state.get("conflicts"),
-        is_replan=False,
-    )
-    state["scores"] = result
-    trace.append(f"scorer_node: final={result['final']}")
-    state["agent_trace"] = trace
-    return state
-
-
-def _rescorer_node(state: TripState) -> TripState:
-    trace = state.get("agent_trace", []) or []
-    trace.append("rescorer_node: re-computing score after replan")
-    result = score(
-        state.get("proposal", {}),
-        state.get("profiles", []),
-        state.get("conflicts"),
-        is_replan=True,
-    )
-    state["scores"] = result
-    if state.get("replan_diff") is not None:
-        state["replan_diff"]["new_score"] = result
-    trace.append(f"rescorer_node: new_final={result['final']}")
-    state["agent_trace"] = trace
-    return state
-
-
 def _route_after_explainer(state: TripState) -> str:
-    return "replanner" if state.get("events") else "done"
+    # If we have events and haven't replanned yet, go to replanner
+    if state.get("events") and not state.get("replan_diff"):
+        return "replanner"
+    return "done"
+
+
+def _route_after_evaluator(state: TripState) -> str:
+    report = state.get("evaluation_report") or {}
+    if report.get("status") == "Reject":
+        # If there are hard violations, try time_fixer first
+        hard_violations = report.get("hard_violations") or []
+        if any(v.get("type") == "time_window_violation" for v in hard_violations):
+            return "time_fixer"
+        # For other hard violations, if we are in the middle of a replan, we might be stuck
+        # but for now let's just go to explainer to show the result
+    return "explainer"
 
 
 def build_graph():
     g = StateGraph(TripState)
     g.add_node("profile", profile_agent.run)
     g.add_node("conflict", conflict_agent.run)
+    g.add_node("keyword", keyword_agent.run)
     g.add_node("generator", generator_agent.run)
-    g.add_node("scorer", _scorer_node)
+    g.add_node("evaluator", evaluator_agent.run)
+    g.add_node("time_fixer", time_fixer_agent.run)
     g.add_node("explainer", explainer_agent.run)
     g.add_node("replanner", replanner_agent.run)
-    g.add_node("rescorer", _rescorer_node)
 
     g.set_entry_point("profile")
     g.add_edge("profile", "conflict")
-    g.add_edge("conflict", "generator")
-    g.add_edge("generator", "scorer")
-    g.add_edge("scorer", "explainer")
+    g.add_edge("conflict", "keyword")
+    g.add_edge("keyword", "generator")
+    g.add_edge("generator", "evaluator")
+    
+    g.add_conditional_edges(
+        "evaluator",
+        _route_after_evaluator,
+        {"time_fixer": "time_fixer", "explainer": "explainer"}
+    )
+    
+    g.add_edge("time_fixer", "explainer")
+    
     g.add_conditional_edges(
         "explainer",
         _route_after_explainer,
         {"replanner": "replanner", "done": END},
     )
-    g.add_edge("replanner", "rescorer")
-    g.add_edge("rescorer", END)
+    g.add_edge("replanner", "evaluator")
 
     return g.compile()
 

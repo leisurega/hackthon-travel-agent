@@ -1,0 +1,43 @@
+{
+  "final_group_score": 78.15,
+  "status": "HumanReview",
+  "status_reasons": [
+    "最低个人满意度(63.5)处于人工审核区间"
+  ],
+  "metrics": {
+    "s_avg": 77.58,
+    "s_min": 63.5,
+    "fairness": 85.0,
+    "execution_efficiency": 90,
+    "robustness": 85
+  },
+  "per_user": [
+    {
+      "user_id": "user_A",
+      "base_score": 85.25,
+      "penalties": 0,
+      "penalty_details": [],
+      "final_satisfaction": 85.25,
+      "must_have_missing": []
+    },
+    {
+      "user_id": "user_B",
+      "base_score": 84.0,
+      "penalties": 0,
+      "penalty_details": [],
+      "final_satisfaction": 84.0,
+      "must_have_missing": []
+    },
+    {
+      "user_id": "user_C",
+      "base_score": 83.5,
+      "penalties": 20,
+      "penalty_details": [
+        "全程无高光 (-10)",
+        "保护型用户满意度偏低 (-10)"
+      ],
+      "final_satisfaction": 63.5,
+      "must_have_missing": []
+    }
+  ]
+}

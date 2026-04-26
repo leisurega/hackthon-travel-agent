@@ -1,0 +1,649 @@
+{
+  "proposal": {
+    "proposal_id": "p1",
+    "type": "公平优先",
+    "cities": [
+      "杭州"
+    ],
+    "city_days": [
+      7
+    ],
+    "total_budget": 15000,
+    "per_person_budget": 5000,
+    "per_person_per_day": 714,
+    "recommendation_reasons": [
+      "满足核心偏好，冲突较少",
+      "日程节奏适中，兼顾摄影、文化和休息",
+      "预算控制良好，性价比高",
+      "公平指数高 (0.85)"
+    ],
+    "per_day": [
+      {
+        "day": 1,
+        "city": "杭州",
+        "theme": "抵达 & 西湖初探",
+        "morning": {
+          "time": "09:00",
+          "title": "抵达杭州，入住酒店",
+          "kind": "transit",
+          "is_indoor": true,
+          "tags": [
+            "抵达"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "transit"
+        },
+        "lunch": {
+          "time": "12:00",
+          "title": "外婆家（西湖店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "杭帮菜"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 80,
+          "poi_id": "hz_waipojia"
+        },
+        "afternoon": {
+          "time": "14:00",
+          "title": "西湖白堤漫步",
+          "kind": "walk",
+          "is_indoor": false,
+          "tags": [
+            "放松",
+            "拍照",
+            "西湖"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "hz_west_lake"
+        },
+        "dinner": {
+          "time": "18:00",
+          "title": "楼外楼（孤山店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "杭帮菜",
+            "老字号"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 220,
+          "poi_id": "hz_louwailou"
+        },
+        "night": {
+          "time": "20:00",
+          "title": "西湖夜景 & 音乐喷泉",
+          "kind": "walk",
+          "is_indoor": false,
+          "tags": [
+            "夜景",
+            "拍照",
+            "放松"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "hz_west_lake"
+        }
+      },
+      {
+        "day": 2,
+        "city": "杭州",
+        "theme": "灵隐禅宗 & 龙井茶韵",
+        "morning": {
+          "time": "09:00",
+          "title": "灵隐寺探访",
+          "kind": "culture",
+          "is_indoor": true,
+          "tags": [
+            "深度文化",
+            "历史",
+            "拍照"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 75,
+          "poi_id": "hz_lingyin_temple"
+        },
+        "lunch": {
+          "time": "12:00",
+          "title": "龙井村农家茶餐",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "放松"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 150,
+          "poi_id": "hz_longjing_village"
+        },
+        "afternoon": {
+          "time": "14:00",
+          "title": "龙井茶园漫步 & 茶文化体验",
+          "kind": "culture",
+          "is_indoor": false,
+          "tags": [
+            "茶文化",
+            "拍照",
+            "放松"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "hz_longjing_village"
+        },
+        "dinner": {
+          "time": "18:00",
+          "title": "外婆家（西湖店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "杭帮菜"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 80,
+          "poi_id": "hz_waipojia"
+        },
+        "night": {
+          "time": "20:00",
+          "title": "酒店休息",
+          "kind": "rest",
+          "is_indoor": true,
+          "tags": [
+            "休息"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "rest"
+        }
+      },
+      {
+        "day": 3,
+        "city": "杭州",
+        "theme": "西溪湿地生态游",
+        "morning": {
+          "time": "09:00",
+          "title": "西溪湿地公园",
+          "kind": "park",
+          "is_indoor": false,
+          "tags": [
+            "放松",
+            "山水",
+            "拍照"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 80,
+          "poi_id": "hz_xixi"
+        },
+        "lunch": {
+          "time": "12:00",
+          "title": "西溪湿地内餐饮",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "杭帮菜"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 100,
+          "poi_id": "hz_waipojia"
+        },
+        "afternoon": {
+          "time": "14:00",
+          "title": "午休（酒店或咖啡厅）",
+          "kind": "rest",
+          "is_indoor": true,
+          "tags": [
+            "休息"
+          ],
+          "beneficiaries": [
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "rest"
+        },
+        "dinner": {
+          "time": "18:00",
+          "title": "楼外楼（孤山店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "杭帮菜",
+            "老字号"
+          ],
+          "beneficiaries": [
+            "A",
+            "B"
+          ],
+          "cost": 220,
+          "poi_id": "hz_louwailou"
+        },
+        "night": {
+          "time": "20:00",
+          "title": "西湖音乐喷泉",
+          "kind": "walk",
+          "is_indoor": false,
+          "tags": [
+            "夜景",
+            "拍照",
+            "放松"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "hz_west_lake"
+        }
+      },
+      {
+        "day": 4,
+        "city": "杭州",
+        "theme": "丝绸文化 & 宋城千古情",
+        "morning": {
+          "time": "09:00",
+          "title": "中国丝绸博物馆",
+          "kind": "museum",
+          "is_indoor": true,
+          "tags": [
+            "博物馆",
+            "深度文化",
+            "艺术"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "hz_silk_museum"
+        },
+        "lunch": {
+          "time": "12:00",
+          "title": "外婆家（西湖店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "杭帮菜"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 80,
+          "poi_id": "hz_waipojia"
+        },
+        "afternoon": {
+          "time": "13:30",
+          "title": "宋城景区",
+          "kind": "theme_park",
+          "is_indoor": false,
+          "tags": [
+            "深度文化",
+            "拍照"
+          ],
+          "beneficiaries": [
+            "A",
+            "B"
+          ],
+          "cost": 320,
+          "poi_id": "hz_songcheng"
+        },
+        "dinner": {
+          "time": "18:00",
+          "title": "宋城内晚餐",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食"
+          ],
+          "beneficiaries": [
+            "A",
+            "B"
+          ],
+          "cost": 100,
+          "poi_id": "hz_waipojia"
+        },
+        "night": {
+          "time": "20:00",
+          "title": "宋城夜景演出",
+          "kind": "show",
+          "is_indoor": false,
+          "tags": [
+            "表演",
+            "拍照"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "hz_songcheng"
+        }
+      },
+      {
+        "day": 5,
+        "city": "杭州",
+        "theme": "雷峰塔 & 博物馆日",
+        "morning": {
+          "time": "09:00",
+          "title": "雷峰塔登顶观湖",
+          "kind": "culture",
+          "is_indoor": false,
+          "tags": [
+            "拍照",
+            "黄金时段",
+            "深度文化"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 40,
+          "poi_id": "hz_leifeng_pagoda"
+        },
+        "lunch": {
+          "time": "12:00",
+          "title": "楼外楼（孤山店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "杭帮菜",
+            "老字号"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 220,
+          "poi_id": "hz_louwailou"
+        },
+        "afternoon": {
+          "time": "14:00",
+          "title": "浙江省博物馆",
+          "kind": "museum",
+          "is_indoor": true,
+          "tags": [
+            "博物馆",
+            "深度文化",
+            "历史"
+          ],
+          "beneficiaries": [
+            "A",
+            "B"
+          ],
+          "cost": 0,
+          "poi_id": "hz_zj_museum"
+        },
+        "dinner": {
+          "time": "18:00",
+          "title": "龙井村农家茶餐",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "放松"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 150,
+          "poi_id": "hz_longjing_village"
+        },
+        "night": {
+          "time": "20:00",
+          "title": "西湖夜游",
+          "kind": "walk",
+          "is_indoor": false,
+          "tags": [
+            "夜景",
+            "拍照",
+            "放松"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "hz_west_lake"
+        }
+      },
+      {
+        "day": 6,
+        "city": "杭州",
+        "theme": "九溪烟树 & 自由时光",
+        "morning": {
+          "time": "09:00",
+          "title": "九溪烟树徒步",
+          "kind": "walk",
+          "is_indoor": false,
+          "tags": [
+            "放松",
+            "山水"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "hz_jiuxi"
+        },
+        "lunch": {
+          "time": "12:00",
+          "title": "外婆家（西湖店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "杭帮菜"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 80,
+          "poi_id": "hz_waipojia"
+        },
+        "afternoon": {
+          "time": "14:00",
+          "title": "午休（酒店）",
+          "kind": "rest",
+          "is_indoor": true,
+          "tags": [
+            "休息"
+          ],
+          "beneficiaries": [
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "rest"
+        },
+        "dinner": {
+          "time": "18:00",
+          "title": "龙井村农家茶餐",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "放松"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 150,
+          "poi_id": "hz_longjing_village"
+        },
+        "night": {
+          "time": "20:00",
+          "title": "西湖夕阳拍摄（林然专属）",
+          "kind": "photo",
+          "is_indoor": false,
+          "tags": [
+            "拍照",
+            "黄金时段",
+            "日落"
+          ],
+          "beneficiaries": [
+            "A"
+          ],
+          "cost": 0,
+          "poi_id": "hz_west_lake"
+        }
+      },
+      {
+        "day": 7,
+        "city": "杭州",
+        "theme": "自由活动 & 返程",
+        "morning": {
+          "time": "09:00",
+          "title": "自由活动（西湖晨拍）",
+          "kind": "walk",
+          "is_indoor": false,
+          "tags": [
+            "拍照",
+            "放松"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "hz_west_lake"
+        },
+        "lunch": {
+          "time": "12:00",
+          "title": "外婆家（西湖店）",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食",
+            "杭帮菜"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 80,
+          "poi_id": "hz_waipojia"
+        },
+        "afternoon": {
+          "time": "14:00",
+          "title": "整理行李 & 返程",
+          "kind": "transit",
+          "is_indoor": true,
+          "tags": [
+            "离开"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "transit"
+        },
+        "dinner": {
+          "time": "18:00",
+          "title": "途中简餐",
+          "kind": "restaurant",
+          "is_indoor": true,
+          "tags": [
+            "美食"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 50,
+          "poi_id": "hz_waipojia"
+        },
+        "night": {
+          "time": "20:00",
+          "title": "返程",
+          "kind": "transit",
+          "is_indoor": true,
+          "tags": [
+            "离开"
+          ],
+          "beneficiaries": [
+            "A",
+            "B",
+            "C"
+          ],
+          "cost": 0,
+          "poi_id": "transit"
+        }
+      }
+    ]
+  }
+}

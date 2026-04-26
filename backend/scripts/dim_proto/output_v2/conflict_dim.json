@@ -1,0 +1,186 @@
+{
+  "dimension_conflicts": [
+    {
+      "dimension": "时间与可用性",
+      "dim_key": "T",
+      "overall_score": 60,
+      "tier": "强软",
+      "involved_users": [
+        "user_A",
+        "user_B",
+        "user_C"
+      ],
+      "summary": "user_C 最晚回酒店时间22:00，user_A 最晚23:00，user_B无硬性限制，但user_C要求至少90分钟午休，可能压缩白天活动时间；user_B愿意早起且能接受高强度，而user_C禁止连续两天高强度。",
+      "suggestion": "固定最早出发时间不早于8:30，确保午休时间；将高耗时活动安排在上午，下午安排轻松项目。"
+    },
+    {
+      "dimension": "预算与消费舒适度",
+      "dim_key": "B",
+      "overall_score": 90,
+      "tier": "弱软",
+      "involved_users": [
+        "user_C"
+      ],
+      "summary": "user_C总预算上限4500元，其他用户无明确预算限制，预计整体行程在可控范围内。",
+      "suggestion": "优先选择性价比高的餐饮和交通，避免高价付费景点。"
+    },
+    {
+      "dimension": "节奏与体力承受",
+      "dim_key": "P",
+      "overall_score": 30,
+      "tier": "硬需求",
+      "involved_users": [
+        "user_A",
+        "user_B",
+        "user_C"
+      ],
+      "summary": "user_C每日步行上限6km且需午休90分钟，user_A上限8km，user_B上限12km；user_C禁止连续两天高强度，而user_B可能偏好较多文化点。节奏差异大。",
+      "suggestion": "设计每日步行不超过6km且包含午休；将高强度文化体验分散在不同天，混合轻松摄影和下午休息。"
+    },
+    {
+      "dimension": "兴趣覆盖与高光体验",
+      "dim_key": "I",
+      "overall_score": 40,
+      "tier": "强软",
+      "involved_users": [
+        "user_A",
+        "user_B",
+        "user_C"
+      ],
+      "summary": "user_A必保西湖日落和湖边清晨摄影，user_B必保灵隐寺/茶文化深度体验，user_C无强制兴趣但有午休需求。核心兴趣需协调在地理位置和时间上的安排。",
+      "suggestion": "将西湖日出/日落和灵隐寺安排在不同天；利用分头行动满足各自高光。"
+    },
+    {
+      "dimension": "饮食与健康安全",
+      "dim_key": "F",
+      "overall_score": 80,
+      "tier": "硬需求",
+      "involved_users": [
+        "user_A",
+        "user_C"
+      ],
+      "summary": "user_A不吃香菜，user_C不吃生食、偏好清淡口味，无其他过敏限制。硬件需求可满足。",
+      "suggestion": "提前选择餐厅确保菜品满足两人饮食要求。"
+    },
+    {
+      "dimension": "社交方式与自主空间",
+      "dim_key": "S",
+      "overall_score": 100,
+      "tier": "弱软",
+      "involved_users": [],
+      "summary": "所有成员均接受分头行动，无社交冲突。",
+      "suggestion": "无特别建议。"
+    }
+  ],
+  "user_dim_pressure": {
+    "user_A": {
+      "T": 30,
+      "B": 0,
+      "P": 50,
+      "I": 20,
+      "F": 0,
+      "S": 0
+    },
+    "user_B": {
+      "T": 20,
+      "B": 0,
+      "P": 40,
+      "I": 30,
+      "F": 0,
+      "S": 0
+    },
+    "user_C": {
+      "T": 20,
+      "B": 10,
+      "P": 0,
+      "I": 10,
+      "F": 0,
+      "S": 0
+    }
+  },
+  "tiered_constraints": {
+    "hard": [
+      {
+        "user": "user_C",
+        "dim": "P",
+        "item": "daily_walk_km_max=6"
+      },
+      {
+        "user": "user_C",
+        "dim": "P",
+        "item": "must_have_midday_rest=90min"
+      },
+      {
+        "user": "user_C",
+        "dim": "P",
+        "item": "no_two_high_intensity_days_in_a_row"
+      },
+      {
+        "user": "user_A",
+        "dim": "F",
+        "item": "no_coriander"
+      },
+      {
+        "user": "user_C",
+        "dim": "F",
+        "item": "no_raw_food"
+      },
+      {
+        "user": "user_C",
+        "dim": "F",
+        "item": "light_taste"
+      },
+      {
+        "user": "user_A",
+        "dim": "I",
+        "item": "must_have_highlight_slots(west_lake_sunset,morning/evening_lake)"
+      },
+      {
+        "user": "user_B",
+        "dim": "I",
+        "item": "must_have_experiences(lingyin/temple,tea_culture)"
+      },
+      {
+        "user": "user_B",
+        "dim": "I",
+        "item": "must_not pure_photo_trip"
+      },
+      {
+        "user": "user_C",
+        "dim": "B",
+        "item": "budget_max=4500"
+      }
+    ],
+    "strong_soft": [
+      {
+        "user": "user_A",
+        "dim": "P",
+        "item": "daily_walk_km_max=8"
+      },
+      {
+        "user": "user_A",
+        "dim": "P",
+        "item": "no_consecutive_early_start"
+      },
+      {
+        "user": "user_C",
+        "dim": "T",
+        "item": "latest_return_hotel_time=22:00"
+      }
+    ],
+    "weak_soft": [
+      {
+        "user": "user_A",
+        "dim": "T",
+        "item": "latest_return_hotel_time=23:00"
+      },
+      {
+        "user": "user_B",
+        "dim": "P",
+        "item": "accept_early_start"
+      }
+    ]
+  },
+  "feasibility_status": "Conditional",
+  "feasibility_reason": "用户B的较高体力需求与用户C的低体力需求冲突，需要精心设计每日步行≤6km且含午休，并将高强度活动分散；同时用户A和B的核心兴趣可错天安排，但需确保不超预算。"
+}
