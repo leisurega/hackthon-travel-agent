@@ -6,6 +6,7 @@ import MemberPool from './pages/MemberPool';
 import Conflicts from './pages/Conflicts';
 import ProposalDetail from './pages/ProposalDetail';
 import Replan from './pages/Replan';
+import AgentTracePanel from './components/AgentTracePanel';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -72,6 +73,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {children}
         </main>
       </div>
+
+      {location.pathname !== '/' && location.pathname !== '/members' && (
+        <AgentTracePanel />
+      )}
     </div>
   );
 };

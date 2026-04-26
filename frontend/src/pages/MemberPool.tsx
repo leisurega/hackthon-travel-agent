@@ -58,13 +58,15 @@ const MemberPool: React.FC = () => {
       user_id: newId,
       display_name: '新成员',
       role: '成员',
-      trip_goal: ['放松'],
-      hard_constraints: { budget_cap: 10000, diet: [], daily_walk_km_max: 10, latest_rest_time: '23:30' },
-      strong_preferences: { city_walking: 50, museum: 50, photography_golden_hour: 50, free_time: 50 },
-      anti_preferences: [],
-      key_tags: ['新成员'],
-      radar: [50, 50, 50, 50, 50, 50],
-      completeness: 50
+      role_tag: '普通成员',
+      protection_level: 'medium',
+      core_story: '',
+      hard_constraints: { budget_max: 5000, walk_km_max: 8.0, dietary: [], latest_rest_time: '23:00' },
+      strong_preferences: { photography: 0.5, museum: 0.5, city_walk: 0.5 },
+      anti_preferences: {},
+      negotiable_range: {},
+      scoring_weights: { T: 0.15, B: 0.15, P: 0.2, I: 0.25, F: 0.15, S: 0.1 },
+      compensation_preference: []
     };
     try {
       await profileApi.create(newProfile);
@@ -86,6 +88,18 @@ const MemberPool: React.FC = () => {
     }
   };
 
+  const updateNested = (path: string, value: any) => {
+    const keys = path.split('.');
+    const newProfile = { ...activeProfile };
+    let current = newProfile;
+    for (let i = 0; i < keys.length - 1; i++) {
+      current[keys[i]] = { ...current[keys[i]] };
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+    setActiveProfile(newProfile);
+  };
+
   if (loading) return <div className="p-10">加载中...</div>;
 
   return (
@@ -93,7 +107,7 @@ const MemberPool: React.FC = () => {
       {/* 左侧成员列表 */}
       <div className="w-80 border-r bg-white flex flex-col">
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-800">成员画像池</h2>
+          <h2 className="text-lg font-bold text-gray-800">成员画像池 (V2)</h2>
           <button 
             onClick={handleCreate}
             className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all"
@@ -117,11 +131,11 @@ const MemberPool: React.FC = () => {
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
                     activeProfile?.user_id === p.user_id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'
                   }`}>
-                    {p.user_id[0]}
+                    {p.display_name?.[0] || p.user_id[0]}
                   </div>
                   <div>
                     <div className="text-sm font-bold text-gray-800">{p.display_name}</div>
-                    <div className="text-[10px] text-gray-400">{p.key_tags?.join(' · ')}</div>
+                    <div className="text-[10px] text-gray-400">{p.role_tag || '未设置标签'}</div>
                   </div>
                 </div>
                 <button 
@@ -139,9 +153,12 @@ const MemberPool: React.FC = () => {
       {/* 右侧编辑表单 */}
       <div className="flex-1 overflow-y-auto p-10">
         {activeProfile ? (
-          <div className="max-w-3xl mx-auto space-y-8">
+          <div className="max-w-4xl mx-auto space-y-8 pb-20">
             <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-gray-900">编辑成员画像</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">编辑成员画像</h1>
+                <p className="text-sm text-gray-400 mt-1">ID: {activeProfile.user_id}</p>
+              </div>
               <button 
                 onClick={handleSave}
                 disabled={saving}
@@ -151,6 +168,7 @@ const MemberPool: React.FC = () => {
               </button>
             </div>
 
+            {/* 基础信息 */}
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase">显示名称</label>
@@ -162,99 +180,279 @@ const MemberPool: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">角色</label>
-                <select 
-                  value={activeProfile.role}
-                  onChange={e => setActiveProfile({...activeProfile, role: e.target.value})}
+                <label className="text-xs font-bold text-gray-400 uppercase">角色标签</label>
+                <input 
+                  type="text" 
+                  value={activeProfile.role_tag}
+                  placeholder="如：西湖摄影慢游型"
+                  onChange={e => setActiveProfile({...activeProfile, role_tag: e.target.value})}
                   className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                  <option value="主导成员">主导成员</option>
-                  <option value="成员">成员</option>
-                </select>
+                />
               </div>
             </div>
 
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 uppercase">核心故事 / 背景</label>
+              <textarea 
+                value={activeProfile.core_story}
+                onChange={e => setActiveProfile({...activeProfile, core_story: e.target.value})}
+                rows={3}
+                className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="描述用户的旅行动机、职业背景等..."
+              />
+            </div>
+
+            {/* 6 维卡片 - P/B/T */}
+            <div className="grid grid-cols-3 gap-6">
+              {/* P: 节奏与体力 (合并保护等级) */}
+              <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-orange-100 text-orange-600 rounded flex items-center justify-center text-xs">P</span>
+                  节奏与体力
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase">保护等级 (优先级)</label>
+                    <select 
+                      value={activeProfile.protection_level}
+                      onChange={e => setActiveProfile({...activeProfile, protection_level: e.target.value})}
+                      className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-sm outline-none"
+                    >
+                      <option value="low">低保护 (体力强)</option>
+                      <option value="medium">中保护 (普通)</option>
+                      <option value="high">高保护 (体力弱/红线)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase">步行上限 (km)</label>
+                    <input 
+                      type="number" step="0.5"
+                      value={activeProfile.hard_constraints.walk_km_max}
+                      onChange={e => updateNested('hard_constraints.walk_km_max', parseFloat(e.target.value))}
+                      className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" id="midday_rest"
+                      checked={activeProfile.hard_constraints.midday_rest}
+                      onChange={e => updateNested('hard_constraints.midday_rest', e.target.checked)}
+                    />
+                    <label htmlFor="midday_rest" className="text-sm text-gray-600">必须午休</label>
+                  </div>
+                </div>
+              </section>
+
+              {/* B: 预算 */}
+              <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-green-100 text-green-600 rounded flex items-center justify-center text-xs">B</span>
+                  预算与消费
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase">总预算上限 (CNY)</label>
+                    <input 
+                      type="number"
+                      value={activeProfile.hard_constraints.budget_max}
+                      onChange={e => updateNested('hard_constraints.budget_max', parseInt(e.target.value))}
+                      className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-sm"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* T: 时间 */}
+              <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded flex items-center justify-center text-xs">T</span>
+                  时间与作息
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase">最晚回酒店</label>
+                    <input 
+                      type="time"
+                      value={activeProfile.hard_constraints.latest_rest_time}
+                      onChange={e => updateNested('hard_constraints.latest_rest_time', e.target.value)}
+                      className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-sm"
+                    />
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* S: 社交与自主 */}
             <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-              <h3 className="font-bold text-gray-800">1. 旅行目标 (Trip Goals)</h3>
-              <div className="flex flex-wrap gap-2">
-                {['放松', '美食', '摄影', '博物馆', '购物', '深度文化'].map(goal => (
-                  <button
-                    key={goal}
-                    onClick={() => {
-                      const goals = activeProfile.trip_goal || [];
-                      const newGoals = goals.includes(goal) ? goals.filter((g: string) => g !== goal) : [...goals, goal];
-                      setActiveProfile({...activeProfile, trip_goal: newGoals});
-                    }}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                      activeProfile.trip_goal?.includes(goal)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-50 text-gray-400 border border-gray-100'
-                    }`}
-                  >
-                    {goal}
-                  </button>
-                ))}
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <span className="w-6 h-6 bg-yellow-100 text-yellow-600 rounded flex items-center justify-center text-xs">S</span>
+                社交方式与自主空间
+              </h3>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="checkbox" id="accept_split"
+                    checked={activeProfile.negotiable_range?.accept_split_action}
+                    onChange={e => updateNested('negotiable_range.accept_split_action', e.target.checked)}
+                  />
+                  <label htmlFor="accept_split" className="text-sm text-gray-600">接受分头行动</label>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-gray-400 uppercase">独处时间偏好 (0-1)</label>
+                  <input 
+                    type="range" min="0" max="100" step="10"
+                    value={(activeProfile.strong_preferences?.solo_time || 0) * 100}
+                    onChange={e => updateNested('strong_preferences.solo_time', parseInt(e.target.value) / 100)}
+                    className="w-full h-1.5 bg-gray-100 rounded-full appearance-none cursor-pointer accent-yellow-600"
+                  />
+                </div>
               </div>
             </section>
 
+            {/* I: 兴趣偏好 */}
             <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
-              <h3 className="font-bold text-gray-800">2. 强偏好 (0-100)</h3>
-              <div className="grid grid-cols-2 gap-x-10 gap-y-6">
-                {[
-                  { key: 'city_walking', label: '城市漫步' },
-                  { key: 'museum', label: '博物馆' },
-                  { key: 'photography_golden_hour', label: '拍照时段' },
-                  { key: 'free_time', label: '自由活动' }
-                ].map(pref => (
-                  <div key={pref.key} className="space-y-2">
-                    <div className="flex justify-between">
-                      <label className="text-sm text-gray-600">{pref.label}</label>
-                      <span className="text-sm font-bold text-blue-600">{activeProfile.strong_preferences[pref.key]}%</span>
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <span className="w-6 h-6 bg-purple-100 text-purple-600 rounded flex items-center justify-center text-xs">I</span>
+                兴趣覆盖 (0.0 - 1.0)
+              </h3>
+              <div className="grid grid-cols-2 gap-x-10 gap-y-4">
+                {Object.entries(activeProfile.strong_preferences).map(([key, val]: [string, any]) => {
+                  const labelMap: Record<string, string> = {
+                    'photography': '摄影',
+                    'museum': '博物馆',
+                    'city_walk': '城市漫步',
+                    'city_walking': '城市漫步',
+                    'photography_golden_hour': '黄金时段摄影',
+                    'free_time': '自由活动',
+                    'tea_culture': '茶文化',
+                    'foodie': '美食探索',
+                    'nature': '自然山水',
+                    'shopping': '购物',
+                    'west_lake_scenery': '西湖景观',
+                    'coffee_time': '咖啡时光',
+                    'slow_pace': '慢节奏',
+                    'temple_culture': '寺庙文化',
+                    'song_dynasty_culture': '南宋文化',
+                    'liangzhu_culture': '良渚文化',
+                    'historical_architecture': '历史建筑',
+                    'clean_hotel': '酒店品质',
+                    'easy_transport': '交通便利',
+                    'low_pace': '低强度',
+                    'budget_saving': '高性价比',
+                    'quiet_rest_time': '安静休息'
+                  };
+                  return (
+                    <div key={key} className="space-y-1">
+                      <div className="flex justify-between">
+                        <label className="text-sm text-gray-600">{labelMap[key] || key}</label>
+                        <span className="text-sm font-bold text-purple-600">{Math.round(val * 100)}%</span>
+                      </div>
+                      <input 
+                        type="range" min="0" max="100" step="5"
+                        value={val * 100}
+                        onChange={e => updateNested(`strong_preferences.${key}`, parseInt(e.target.value) / 100)}
+                        className="w-full h-1.5 bg-gray-100 rounded-full appearance-none cursor-pointer accent-purple-600"
+                      />
                     </div>
+                  );
+                })}
+                <button 
+                  onClick={() => {
+                    const key = prompt('输入新偏好 key (如: tea_culture)');
+                    if (key) updateNested(`strong_preferences.${key}`, 0.5);
+                  }}
+                  className="text-xs text-purple-600 font-bold hover:underline text-left"
+                >
+                  + 添加偏好维度
+                </button>
+              </div>
+            </section>
+
+            {/* F: 饮食与健康 */}
+            <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <span className="w-6 h-6 bg-red-100 text-red-600 rounded flex items-center justify-center text-xs">F</span>
+                饮食与健康安全 (Must Not)
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {activeProfile.hard_constraints.dietary?.map((item: string, idx: number) => (
+                  <div key={idx} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
+                    {item}
+                    <button onClick={() => {
+                      const newDiet = activeProfile.hard_constraints.dietary.filter((_: any, i: number) => i !== idx);
+                      updateNested('hard_constraints.dietary', newDiet);
+                    }}>×</button>
+                  </div>
+                ))}
+                <button 
+                  onClick={() => {
+                    const item = prompt('输入忌口或过敏项');
+                    if (item) updateNested('hard_constraints.dietary', [...(activeProfile.hard_constraints.dietary || []), item]);
+                  }}
+                  className="px-3 py-1 border border-dashed border-red-200 text-red-400 rounded-lg text-sm"
+                >
+                  + 添加忌口
+                </button>
+              </div>
+            </section>
+
+            {/* 评分权重 */}
+            <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+              <h3 className="font-bold text-gray-800">评分权重 (Scoring Weights)</h3>
+              <div className="grid grid-cols-6 gap-4">
+                {[
+                  { key: 'T', label: '时间' },
+                  { key: 'B', label: '预算' },
+                  { key: 'P', label: '节奏' },
+                  { key: 'I', label: '兴趣' },
+                  { key: 'F', label: '饮食' },
+                  { key: 'S', label: '社交' }
+                ].map(dim => (
+                  <div key={dim.key} className="space-y-1">
+                    <label className="text-xs text-gray-400 block text-center">{dim.label}</label>
                     <input 
-                      type="range" min="0" max="100" 
-                      value={activeProfile.strong_preferences[pref.key]}
-                      onChange={e => setActiveProfile({
-                        ...activeProfile, 
-                        strong_preferences: {
-                          ...activeProfile.strong_preferences,
-                          [pref.key]: parseInt(e.target.value)
-                        }
-                      })}
-                      className="w-full h-2 bg-gray-100 rounded-full appearance-none cursor-pointer accent-blue-600"
+                      type="number" step="0.05" min="0" max="1"
+                      value={activeProfile.scoring_weights[dim.key]}
+                      onChange={e => updateNested(`scoring_weights.${dim.key}`, parseFloat(e.target.value))}
+                      className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-center text-sm font-bold"
                     />
                   </div>
                 ))}
               </div>
+              <p className="text-[10px] text-gray-400">注：权重总和应为 1.0，用于计算个人最终满意度。</p>
             </section>
 
+            {/* 补偿偏好 */}
             <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-              <h3 className="font-bold text-gray-800">3. 硬约束</h3>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs text-gray-400">预算上限 (CNY)</label>
-                  <input 
-                    type="number" 
-                    value={activeProfile.hard_constraints.budget_cap}
-                    onChange={e => setActiveProfile({
-                      ...activeProfile,
-                      hard_constraints: { ...activeProfile.hard_constraints, budget_cap: parseInt(e.target.value) }
-                    })}
-                    className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs text-gray-400">步行上限 (km/day)</label>
-                  <input 
-                    type="number" 
-                    value={activeProfile.hard_constraints.daily_walk_km_max}
-                    onChange={e => setActiveProfile({
-                      ...activeProfile,
-                      hard_constraints: { ...activeProfile.hard_constraints, daily_walk_km_max: parseFloat(e.target.value) }
-                    })}
-                    className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none"
-                  />
-                </div>
+              <h3 className="font-bold text-gray-800">补偿机制 (Compensation)</h3>
+              <div className="space-y-3">
+                {activeProfile.compensation_preference?.map((comp: any, idx: number) => (
+                  <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-start">
+                    <div className="text-sm">
+                      <div className="font-bold text-gray-700">当 {comp.trigger} 时:</div>
+                      <div className="text-blue-600 mt-1">补偿动作: {comp.action}</div>
+                    </div>
+                    <button onClick={() => {
+                      const newComp = activeProfile.compensation_preference.filter((_: any, i: number) => i !== idx);
+                      setActiveProfile({...activeProfile, compensation_preference: newComp});
+                    }} className="text-gray-300 hover:text-red-500">×</button>
+                  </div>
+                ))}
+                <button 
+                  onClick={() => {
+                    const trigger = prompt('触发场景 (如：未拍到日落)');
+                    const action = prompt('补偿动作 (如：次日清晨独自西湖摄影 90min)');
+                    if (trigger && action) {
+                      setActiveProfile({
+                        ...activeProfile, 
+                        compensation_preference: [...(activeProfile.compensation_preference || []), { trigger, action }]
+                      });
+                    }
+                  }}
+                  className="w-full py-3 border border-dashed border-gray-200 text-gray-400 rounded-xl text-sm hover:bg-gray-50 transition-all"
+                >
+                  + 添加补偿规则
+                </button>
               </div>
             </section>
           </div>

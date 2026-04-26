@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTrip } from '../contexts/TripContext';
 import { tripApi } from '../api/trip';
 
-const SLOT_META: { key: 'morning' | 'noon' | 'evening'; label: string; defaultIcon: string }[] = [
-  { key: 'morning', label: '早', defaultIcon: '🌅' },
-  { key: 'noon', label: '中', defaultIcon: '🍽' },
-  { key: 'evening', label: '晚', defaultIcon: '🌆' },
+const SLOT_META: { key: 'morning' | 'lunch' | 'afternoon' | 'dinner' | 'night'; label: string; defaultIcon: string }[] = [
+  { key: 'morning',   label: '早 09:00', defaultIcon: '🌅' },
+  { key: 'lunch',     label: '午 12:00', defaultIcon: '🍽' },
+  { key: 'afternoon', label: '下午 15:00', defaultIcon: '🚶' },
+  { key: 'dinner',    label: '晚 18:00', defaultIcon: '🍜' },
+  { key: 'night',     label: '夜 20:00', defaultIcon: '🌃' },
 ];
 
 const iconFor = (kind?: string, is_indoor?: boolean) => {
@@ -21,23 +23,45 @@ const iconFor = (kind?: string, is_indoor?: boolean) => {
   }
 };
 
+const truncate = (text: string, max = 20) => {
+  if (!text) return '';
+  return text.length > max ? text.slice(0, max) + '…' : text;
+};
+
 const ProposalDetail: React.FC = () => {
-  const { tripId, tripData, refreshTrip } = useTrip();
-  const navigate = useNavigate();
+  const { tripId, tripData, refreshTrip, setTripData } = useTrip();
   const [replanning, setReplanning] = useState(false);
+  const [adopting, setAdopting] = useState(false);
+  const [showEval, setShowEval] = useState(false);
 
   const handleReplan = async () => {
     if (!tripId) return;
     setReplanning(true);
     try {
-      await tripApi.replan(tripId);
-      await refreshTrip();
+      const next = await tripApi.replan(tripId);
+      if (next) setTripData(next);
+      else await refreshTrip();
       alert('重新规划完成！');
     } catch (err) {
       console.error('Replan failed', err);
       alert('重新规划失败');
     } finally {
       setReplanning(false);
+    }
+  };
+
+  const handleAdopt = async () => {
+    if (!tripId || adopting) return;
+    setAdopting(true);
+    try {
+      const next = await tripApi.adopt(tripId);
+      if (next) setTripData(next);
+      else await refreshTrip();
+    } catch (err) {
+      console.error('Adopt failed', err);
+      alert('采纳失败，请稍后重试');
+    } finally {
+      setAdopting(false);
     }
   };
 
@@ -52,19 +76,37 @@ const ProposalDetail: React.FC = () => {
     per_day: []
   };
 
+  const evalReport = tripData?.evaluation_report || {};
   const perUserImpact = tripData?.explanations?.per_user_impact || [];
   const days = tripData?.days || proposal.per_day?.length || 7;
   const perDay = proposal.per_day || [];
-  const cityDaysText = proposal.city_days?.map((d: number) => `${d}天`).join(' / ') || '-';
+  const cityDaysText = proposal.city_days?.length > 0 ? proposal.city_days?.map((d: number) => `${d}天`).join(' / ') : '';
+  const adoptedAt: string | undefined = tripData?.adopted_at;
+
+  const profileById = useMemo(() => Object.fromEntries(
+    (tripData?.profiles || []).map((p: any) => [p.user_id, p])
+  ), [tripData?.profiles]);
+
+  const poiById = useMemo(() => {
+    const map: Record<string, any> = {};
+    const pool = tripData?.poi_pool || {};
+    Object.values(pool).forEach((cityList: any) => {
+      (cityList || []).forEach((poi: any) => {
+        if (poi?.poi_id) map[poi.poi_id] = poi;
+      });
+    });
+    return map;
+  }, [tripData?.poi_pool]);
 
   const roleLabel = (uid: string) => {
-    switch (uid) {
-      case 'A': return '慢游拍照';
-      case 'B': return '博物馆深度';
-      case 'C': return '预算控制';
-      case 'D': return '购物自由';
-      default: return uid;
-    }
+    const p = profileById[uid];
+    if (!p) return uid;
+    return p.role_tag || p.display_name || uid;
+  };
+
+  const memberInitial = (uid: string) => {
+    const name = profileById[uid]?.display_name;
+    return (name && name[0]) || uid;
   };
 
   return (
@@ -72,25 +114,186 @@ const ProposalDetail: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-end mb-10">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">方案详情</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900">方案详情 (V2)</h1>
+              {adoptedAt && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
+                  ✓ 已采纳 · {new Date(adoptedAt).toLocaleString()}
+                </span>
+              )}
+            </div>
             <p className="text-gray-500 font-medium">{proposal.type}方案 · {proposal.cities?.join(' / ') || '—'} · {days} 天</p>
           </div>
+          <div className="flex flex-col items-end gap-2">
           <div className="flex gap-4">
             <button 
-              onClick={handleReplan}
-              disabled={replanning}
-              className="px-6 py-3 border-2 border-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all flex items-center gap-2 disabled:opacity-50"
+              onClick={() => setShowEval(!showEval)}
+              className={`px-6 py-3 border-2 rounded-2xl font-bold transition-all flex items-center gap-2 ${
+                showEval ? 'bg-blue-600 border-blue-600 text-white' : 'border-blue-100 text-blue-600 hover:bg-blue-50'
+              }`}
             >
-              <span>✏️</span> {replanning ? '规划中...' : '重新规划路径'}
+              <span>📊</span> {showEval ? '隐藏评估面板' : '查看有效性评估'}
             </button>
-            <Link 
-              to="/replan"
-              className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+            <Link
+              to="/conflicts"
+              className="px-6 py-3 border-2 border-orange-100 text-orange-600 rounded-2xl font-bold hover:bg-orange-50 transition-all flex items-center gap-2"
             >
-              <span>✅</span> 采纳此方案
+              <span>⚠️</span> 冲突分析
             </Link>
+            <button 
+              onClick={handleReplan}
+                disabled={replanning}
+                className="px-6 py-3 border-2 border-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                <span>✏️</span> {replanning ? '规划中...' : '重新规划'}
+              </button>
+            </div>
           </div>
         </div>
+
+        {showEval && evalReport && (
+          <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-300">
+            <section className="bg-white p-8 rounded-3xl border-2 border-blue-500 shadow-xl shadow-blue-100 space-y-8">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-6">
+                  <div className="text-center">
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">系统状态</div>
+                    <div className={`px-4 py-1 rounded-full text-sm font-black ${
+                      evalReport.status === 'Pass' ? 'bg-green-100 text-green-600' :
+                      evalReport.status === 'HumanReview' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'
+                    }`}>
+                      {evalReport.status}
+                    </div>
+                  </div>
+                  <div className="h-10 w-px bg-gray-100"></div>
+                  <div className="text-center">
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">综合评分</div>
+                    <div className="text-3xl font-black text-blue-600">{evalReport.final_group_score}</div>
+                  </div>
+                  <div className="h-10 w-px bg-gray-100"></div>
+                  <div className="text-center">
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">补偿到位率</div>
+                    <div className="text-xl font-bold text-purple-600">{evalReport.compensation_metric?.fulfilled_pct ?? 0}%</div>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  {['s_avg', 's_min', 'fairness'].map(m => (
+                    <div key={m} className="bg-gray-50 px-4 py-2 rounded-xl text-center">
+                      <div className="text-[8px] font-bold text-gray-400 uppercase">{m}</div>
+                      <div className="text-sm font-bold text-gray-700">{evalReport.metrics?.[m] ?? '—'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-8">
+                {/* Drill-down 1: 硬违反 */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-gray-800 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-500"></span> 硬违反清单 (Layer A)
+                  </h4>
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    {evalReport.hard_violations?.length === 0 ? (
+                      <div className="text-[10px] text-gray-400 p-4 border border-dashed rounded-xl text-center">无硬性红线违反</div>
+                    ) : evalReport.hard_violations.map((v: any, i: number) => (
+                      <div key={i} className="p-3 bg-red-50 rounded-xl border border-red-100 text-[10px]">
+                        <div className="font-bold text-red-700 mb-1">第 {v.day} 天 · {profileById[v.user_id]?.display_name}</div>
+                        <div className="text-red-600">
+                          {v.actual_km ? `步行 ${v.actual_km}km > 上限 ${v.limit_km}km` : 
+                           v.actual_budget ? `预算 ${v.actual_budget} > 上限 ${v.limit_budget}` :
+                           `触发忌口: ${v.forbidden_item} (${v.meal})`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Drill-down 2: 补偿审计 */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-gray-800 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500"></span> 补偿审计 (Layer B)
+                  </h4>
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    {evalReport.compensation_audit?.length === 0 ? (
+                      <div className="text-[10px] text-gray-400 p-4 border border-dashed rounded-xl text-center">无补偿需求触发</div>
+                    ) : evalReport.compensation_audit.map((a: any, i: number) => {
+                      const prefLabelMap: Record<string, string> = {
+                        'photography': '摄影',
+                        'museum': '博物馆',
+                        'city_walk': '城市漫步',
+                        'tea_culture': '茶文化',
+                        'foodie': '美食探索',
+                        'nature': '自然山水',
+                        'shopping': '购物',
+                        'west_lake_scenery': '西湖景观',
+                        'coffee_time': '咖啡时光',
+                        'slow_pace': '慢节奏',
+                        'temple_culture': '寺庙文化',
+                        'song_dynasty_culture': '南宋文化',
+                        'liangzhu_culture': '良渚文化',
+                        'historical_architecture': '历史建筑',
+                        'clean_hotel': '酒店品质',
+                        'easy_transport': '交通便利',
+                        'low_pace': '低强度',
+                        'budget_saving': '高性价比',
+                        'quiet_rest_time': '安静休息'
+                      };
+                      return (
+                        <div key={i} className={`p-3 rounded-xl border text-[10px] ${
+                          a.fulfillment === 'fulfilled' ? 'bg-green-50 border-green-100' :
+                          a.fulfillment === 'partial' ? 'bg-orange-50 border-orange-100' : 'bg-gray-50 border-gray-100'
+                        }`}>
+                          <div className="flex justify-between mb-1">
+                            <span className="font-bold">{profileById[a.user_id]?.display_name}</span>
+                            <span className={`font-black uppercase ${
+                              a.fulfillment === 'fulfilled' ? 'text-green-600' :
+                              a.fulfillment === 'partial' ? 'text-orange-600' : 'text-gray-400'
+                            }`}>{a.fulfillment === 'fulfilled' ? '已满足' : a.fulfillment === 'partial' ? '部分满足' : '未满足'}</span>
+                          </div>
+                          <div className="text-gray-500 mb-1">牺牲偏好: {prefLabelMap[a.missed_strong_preference] || a.missed_strong_preference}</div>
+                          <div className="text-blue-600 font-medium">证据: 第 {a.fulfilled_by?.day} 天 {a.fulfilled_by?.title}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Drill-down 3: 个人雷达 */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-gray-800 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span> 满意度明细 (Layer C)
+                  </h4>
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    {evalReport.per_user?.map((u: any) => (
+                      <div key={u.user_id} className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-[10px]">
+                        <div className="flex justify-between mb-2">
+                          <span className="font-bold text-gray-700">{u.display_name}</span>
+                          <span className="font-black text-blue-600">{u.final_satisfaction}</span>
+                        </div>
+                        <div className="grid grid-cols-6 gap-1 mb-2">
+                          {Object.entries(u.dimensions).map(([k, v]: [string, any]) => {
+                            const dimLabelMap: Record<string, string> = {
+                              'T': '时间', 'B': '预算', 'P': '节奏', 'I': '兴趣', 'F': '饮食', 'S': '社交'
+                            };
+                            return (
+                              <div key={k} className="text-center">
+                                <div className="text-[7px] text-gray-400">{dimLabelMap[k] || k}</div>
+                                <div className={`font-bold ${v < 60 ? 'text-red-400' : 'text-gray-600'}`}>{v}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {u.penalty_details?.map((p: string, i: number) => (
+                          <div key={i} className="text-red-400 text-[8px] italic">{p}</div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
         
         <div className="grid grid-cols-12 gap-8">
           <div className="col-span-8 space-y-8">
@@ -98,8 +301,10 @@ const ProposalDetail: React.FC = () => {
               <div className="grid grid-cols-4 gap-8 mb-10">
                 <div className="col-span-1">
                   <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">总分 ℹ️</div>
-                  <div className="text-4xl font-black text-blue-600">{tripData?.scores?.final || 84}<span className="text-sm font-normal text-gray-300 ml-1">/100</span></div>
-                  <div className="text-[10px] text-green-500 font-bold mt-1">优秀方案</div>
+                  <div className="text-4xl font-black text-blue-600">{evalReport?.final_group_score || tripData?.scores?.final || '—'}<span className="text-sm font-normal text-gray-300 ml-1">/100</span></div>
+                  <div className={`text-[10px] font-bold mt-1 ${evalReport?.status === 'Reject' ? 'text-red-500' : 'text-green-500'}`}>
+                    {evalReport?.status || '优秀方案'}
+                  </div>
                 </div>
                 <div className="col-span-1">
                   <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">预算概览</div>
@@ -148,10 +353,11 @@ const ProposalDetail: React.FC = () => {
                         <span>📍</span> {dayPlan.city || '-'}
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-5 gap-4">
                       {SLOT_META.map(slot => {
                         const block = dayPlan[slot.key] || {};
                         const users: string[] = block.beneficiaries || [];
+                        const poi = block.poi_id ? poiById[block.poi_id] : undefined;
                         return (
                           <div key={slot.key} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                             <div className="text-[10px] font-bold text-gray-400 mb-2 uppercase">
@@ -161,17 +367,40 @@ const ProposalDetail: React.FC = () => {
                               <span>{iconFor(block.kind, block.is_indoor) || slot.defaultIcon}</span>
                               <span className="truncate" title={block.title}>{block.title || '—'}</span>
                             </div>
+                            {poi && (
+                              <div className="space-y-1 mb-3 text-[10px] text-gray-500">
+                                {poi.rating > 0 && (
+                                  <div className="flex items-center gap-1" title={`评分 ${poi.rating}/5`}>
+                                    <span>⭐</span>
+                                    <span className="font-bold text-amber-600">{poi.rating.toFixed(1)}</span>
+                                  </div>
+                                )}
+                                {poi.walk_km_estimate && (
+                                  <div className="flex items-center gap-1" title={`预计步行 ${poi.walk_km_estimate}km`}>
+                                    <span>🚶</span>
+                                    <span className="font-bold text-orange-600">{poi.walk_km_estimate}km</span>
+                                  </div>
+                                )}
+                                {poi.avg_cost > 0 && (
+                                  <div className="flex items-center gap-1" title={`人均 ¥${poi.avg_cost}`}>
+                                    <span>💰</span>
+                                    <span className="font-bold text-gray-700">¥{poi.avg_cost}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             <div className="flex items-center justify-between">
                               <div className="flex -space-x-1.5">
                                 {users.length === 0 ? (
                                   <div className="text-[10px] text-gray-300">无受益人</div>
                                 ) : users.map((u: string) => (
-                                  <div key={u} className="w-5 h-5 rounded-full bg-blue-100 border-2 border-white text-[8px] font-bold text-blue-600 flex items-center justify-center shadow-sm">{u}</div>
+                                  <div
+                                    key={u}
+                                    title={profileById[u]?.display_name || u}
+                                    className="w-5 h-5 rounded-full bg-blue-100 border-2 border-white text-[8px] font-bold text-blue-600 flex items-center justify-center shadow-sm"
+                                  >{memberInitial(u)}</div>
                                 ))}
                               </div>
-                              {typeof block.cost === 'number' && block.cost > 0 && (
-                                <span className="text-[9px] font-bold text-gray-400">¥{block.cost}</span>
-                              )}
                             </div>
                           </div>
                         );
@@ -186,7 +415,7 @@ const ProposalDetail: React.FC = () => {
           <div className="col-span-4 space-y-8">
             <section className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm sticky top-10">
               <h3 className="text-base font-bold mb-8 text-gray-800 flex items-center gap-2">
-                <span className="w-1 h-4 bg-blue-600 rounded-full"></span> 成员影响
+                <span className="w-1 h-4 bg-blue-600 rounded-full"></span> 成员影响 (V2)
               </h3>
               <div className="space-y-8">
                 {perUserImpact.length === 0 ? (
@@ -195,7 +424,10 @@ const ProposalDetail: React.FC = () => {
                   <div key={impact.user_id} className="space-y-3">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">{impact.user_id}</div>
+                        <div
+                          className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center"
+                          title={profileById[impact.user_id]?.display_name || impact.user_id}
+                        >{memberInitial(impact.user_id)}</div>
                         <span className="text-xs font-bold text-gray-700">{roleLabel(impact.user_id)}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -218,46 +450,6 @@ const ProposalDetail: React.FC = () => {
                   </div>
                 ))}
               </div>
-              
-              {perUserImpact.length > 0 && (
-                <div className="mt-10 pt-8 border-t border-gray-100">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
-                    🤝 妥协与补偿记录
-                  </h3>
-                  <div className="space-y-4">
-                    {(() => {
-                      const g = perUserImpact.find((i: any) => i.gave_up?.[0]);
-                      const c = perUserImpact.find((i: any) => i.compensation?.[0]);
-                      return (
-                        <>
-                          {g && (
-                            <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
-                              <div className="flex justify-between items-center mb-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-5 h-5 rounded-full bg-orange-500 text-white text-[8px] font-bold flex items-center justify-center">{g.user_id}</div>
-                                  <span className="text-[10px] font-bold text-orange-700 uppercase">妥协记录</span>
-                                </div>
-                              </div>
-                              <p className="text-[10px] text-orange-800 leading-relaxed font-medium">{g.gave_up[0]}</p>
-                            </div>
-                          )}
-                          {c && (
-                            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                              <div className="flex justify-between items-center mb-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-5 h-5 rounded-full bg-blue-500 text-white text-[8px] font-bold flex items-center justify-center">{c.user_id}</div>
-                                  <span className="text-[10px] font-bold text-blue-700 uppercase">补偿记录</span>
-                                </div>
-                              </div>
-                              <p className="text-[10px] text-blue-800 leading-relaxed font-medium">{c.compensation[0]}</p>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-              )}
             </section>
           </div>
         </div>

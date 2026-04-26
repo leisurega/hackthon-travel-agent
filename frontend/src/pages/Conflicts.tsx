@@ -23,32 +23,32 @@ const Conflicts: React.FC = () => {
   };
 
   const stats = [
-    { label: '总冲突数', value: tripData?.conflict_summary?.total || 12, color: 'blue' },
-    { label: '高优先级冲突', value: tripData?.conflict_summary?.high_priority || 4, color: 'red' },
-    { label: '硬冲突', value: tripData?.conflict_summary?.hard || 2, color: 'orange' },
-    { label: '初始可行性', value: (tripData?.conflict_summary?.feasibility || 71) + '%', color: 'green' }
+    { label: '总冲突数', value: tripData?.conflict_summary?.total || 0, color: 'blue' },
+    { label: '硬冲突', value: tripData?.conflict_summary?.hard || 0, color: 'red' },
+    { label: '状态', value: tripData?.conflicts_v2?.feasibility_status || 'Pass', color: 'orange' },
+    { label: '系统压力', value: '6维矩阵', color: 'green' }
   ];
 
   // 动态 X 轴：仅显示选中的成员
   const xAxis = selectedMemberIds.map(id => idToName[id] || id);
-  const yAxis = ['预算', '时间', '节奏', '兴趣', '饮食', '社交'];
+  const yAxis = ['T(时间)', 'B(预算)', 'P(节奏)', 'I(兴趣)', 'F(饮食)', 'S(社交)'];
 
   // 动态 Heatmap 数据：根据选中的成员 ID 过滤列
   const fullHeatmapData = tripData?.heatmap || [
-    [0, 1, 3, 2],
-    [1, 2, 1, 0],
-    [3, 2, 0, 1],
-    [0, 1, 2, 1],
-    [2, 0, 2, 1],
-    [1, 0, 1, 0]
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0]
   ];
 
-  // 映射 selectedMemberIds 到 fullHeatmapData 的索引 (假设 A=0, B=1, C=2, D=3)
-  const idToIndex: Record<string, number> = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-  const heatmapData = fullHeatmapData.map(row => 
-    selectedMemberIds.map(id => {
-      const idx = idToIndex[id];
-      return idx !== undefined ? row[idx] : 0;
+  // 列顺序按当前 trip 的 profiles 顺序对应矩阵列；不再硬编码 A/B/C/D。
+  const profileOrder: string[] = (tripData?.profiles || []).map((p: any) => p.user_id);
+  const heatmapData = fullHeatmapData.map((row: number[]) =>
+    selectedMemberIds.map((id: string) => {
+      const idx = profileOrder.indexOf(id);
+      return idx >= 0 && idx < row.length ? row[idx] : 0;
     })
   );
 
@@ -143,7 +143,7 @@ const Conflicts: React.FC = () => {
             to="/proposal"
             className="bg-blue-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            生成候选方案 →
+            查看方案详情 →
           </Link>
         </div>
       </div>

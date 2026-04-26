@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTrip } from '../contexts/TripContext';
 import { tripApi } from '../api/trip';
 
@@ -15,249 +15,247 @@ const iconFor = (kind?: string, is_indoor?: boolean) => {
 };
 
 const Replan: React.FC = () => {
-  const { tripData, tripId, refreshTrip } = useTrip();
+  const { tripData, tripId, refreshTrip, setTripData } = useTrip();
+  const [eventTypes, setEventTypes] = useState<any>({});
+  const [selectedType, setSelectedType] = useState('');
+  const [eventParams, setEventParams] = useState<any>({});
+  const [occursOnDay, setOccursOnDay] = useState(1);
+  const [todayInfo, setTodayInfo] = useState<any>(null);
   const [triggering, setTriggering] = useState(false);
+  const [replaying, setReplaying] = useState(false);
 
-  const replanDiff = tripData?.replan_diff;
-  const oldScore = replanDiff?.old_score?.final;
-  const newScore = replanDiff?.new_score?.final ?? tripData?.scores?.final;
+  useEffect(() => {
+    tripApi.getEventTypes().then(setEventTypes).catch(console.error);
+    if (tripId) {
+      tripApi.getToday(tripId).then(info => {
+        setTodayInfo(info);
+        setOccursOnDay(info.today_index);
+      }).catch(console.error);
+    }
+  }, [tripId]);
 
   const handleTrigger = async () => {
-    if (!tripId) return;
+    if (!tripId || !selectedType) return;
     setTriggering(true);
     try {
-      await tripApi.postEvent(tripId, 'day3_rain');
-      await refreshTrip();
+      const next = await tripApi.postEvent(tripId, {
+        type: selectedType,
+        params: eventParams,
+        occurs_on_day: occursOnDay
+      });
+      setTripData(next);
+      // Refresh today info in case it changed
+      const info = await tripApi.getToday(tripId);
+      setTodayInfo(info);
+    } catch (err) {
+      console.error('Failed to post event', err);
+      alert('触发失败');
     } finally {
       setTriggering(false);
     }
   };
 
-  if (!replanDiff) {
+  const handleReplay = async () => {
+    if (!tripId || !window.confirm('确定要重置回原始方案并清空所有事件吗？')) return;
+    setReplaying(true);
+    try {
+      const next = await tripApi.replay(tripId);
+      setTripData(next);
+      const info = await tripApi.getToday(tripId);
+      setTodayInfo(info);
+    } finally {
+      setReplaying(false);
+    }
+  };
+
+  const renderEventForm = () => {
+    if (!selectedType || !eventTypes[selectedType]) return null;
+    const fields = eventTypes[selectedType].fields;
     return (
-      <div className="p-10 h-full overflow-y-auto bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">动态重排</h1>
-          <p className="text-gray-500 mb-10">触发一个突发事件，Agent 将对当前方案做最小扰动调整</p>
-          <div className="bg-white p-10 rounded-3xl border border-gray-100 shadow-sm text-center">
-            <div className="text-5xl mb-4">☁️</div>
-            <p className="text-gray-500 mb-6">尚未触发事件。点击下方按钮模拟「Day 3 下雨」。</p>
-            <button
-              onClick={handleTrigger}
-              disabled={triggering || !tripId}
-              className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 disabled:opacity-50 transition-all"
-            >
-              {triggering ? 'Agent 正在重规划...' : '⚡ 触发 Day 3 下雨事件'}
-            </button>
+      <div className="grid grid-cols-2 gap-4 mt-4 text-left">
+        {fields.map((f: any) => (
+          <div key={f.name} className={f.type === 'string' ? 'col-span-2' : ''}>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">{f.label}</label>
+            <input
+              type={f.type === 'number' ? 'number' : 'text'}
+              placeholder={f.placeholder}
+              value={eventParams[f.name] || ''}
+              onChange={e => setEventParams({...eventParams, [f.name]: e.target.value})}
+              className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            />
           </div>
-        </div>
+        ))}
       </div>
     );
-  }
+  };
 
-  const originalDayPlan = replanDiff.original_day_plans?.[0];
-  const newDayPlans = replanDiff.new_day_plans || [];
+  const frozenUntil = todayInfo?.frozen_until || 0;
+  const events = tripData?.events || [];
+  const replanDiff = tripData?.replan_diff;
 
   return (
     <div className="p-10 h-full overflow-y-auto bg-gray-50">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">动态重排</h1>
-        <p className="text-gray-500 mb-10">在突发事件下对当前方案进行最小扰动调整 ℹ️</p>
-        
-        <div className="bg-orange-50 border border-orange-100 p-8 rounded-3xl flex items-center gap-8 mb-10 shadow-sm">
-          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-orange-50">⚠️</div>
+        <div className="flex justify-between items-start mb-10">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="text-xl font-black text-orange-700">事件：{replanDiff.event_title}</div>
-              <span className="px-3 py-1 bg-orange-200 text-orange-800 text-[10px] font-black rounded-full uppercase">天气变化</span>
-            </div>
-            <p className="text-sm text-orange-600 font-medium opacity-80">
-              影响范围：{replanDiff.impact_range} · 扰动范围：{replanDiff.disturbance}
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">动态重排</h1>
+            <p className="text-gray-500">基于时间锚点增量调整行程方案</p>
           </div>
+          {todayInfo && (
+            <div className="bg-white px-6 py-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-6">
+              <div className="text-center">
+                <div className="text-[10px] font-black text-gray-400 uppercase">当前日期</div>
+                <div className="text-xl font-black text-blue-600">Day {todayInfo.today_index}</div>
+              </div>
+              <div className="w-px h-8 bg-gray-100"></div>
+              <div className="text-center">
+                <div className="text-[10px] font-black text-gray-400 uppercase">已锁定天数</div>
+                <div className="text-xl font-black text-gray-400">Day 1..{frozenUntil}</div>
+              </div>
+            </div>
+          )}
         </div>
-        
+
         <div className="grid grid-cols-12 gap-10">
-          <div className="col-span-8 grid grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span> 原计划
+          {/* Left: Event Control Panel */}
+          <div className="col-span-4 space-y-6">
+            <section className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+              <h3 className="text-sm font-bold mb-4 text-gray-800 flex items-center gap-2">
+                <span className="w-1 h-3 bg-blue-600 rounded-full"></span> 触发突发事件
               </h3>
-              <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm opacity-60 grayscale-[0.3]">
-                <div className="flex justify-between items-center mb-8">
-                  <div className="font-black text-gray-800">
-                    Day {originalDayPlan?.day || '-'} · {originalDayPlan?.city || '-'}
-                  </div>
-                  <span className="text-[10px] text-gray-400">🌧 降雨概率 90%</span>
-                </div>
-                <div className="space-y-4">
-                  {originalDayPlan ? (['morning', 'noon', 'evening'] as const).map(slot => {
-                    const block = originalDayPlan[slot];
-                    if (!block?.title) return null;
-                    return (
-                      <div key={slot} className="p-5 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4">
-                        <div className="text-[10px] font-black text-gray-400 w-12">{block.time}</div>
-                        <div className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                          <span>{iconFor(block.kind, block.is_indoor)}</span> {block.title}
-                        </div>
-                      </div>
-                    );
-                  }) : <div className="text-xs text-gray-400">无数据</div>}
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-6">
-              <h3 className="text-xs font-black text-green-600 uppercase tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> 新计划 
-                <span className="text-[10px] bg-green-100 px-2 py-0.5 rounded-lg font-black ml-1">已优化</span>
-              </h3>
-              <div className="bg-white p-8 rounded-3xl border-2 border-green-500 shadow-2xl shadow-green-100 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-2">
-                  <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-black rotate-12 shadow-lg border-4 border-white">NEW</div>
-                </div>
-                {newDayPlans.map((dp: any, idx: number) => {
-                  const isCompensation = idx > 0;
-                  return (
-                    <div key={dp.day} className={idx === 0 ? '' : 'mt-8 pt-8 border-t border-dashed border-gray-200'}>
-                      <div className="flex items-center justify-between mb-4">
-                        <div className={`text-[10px] font-black uppercase tracking-widest ${isCompensation ? 'text-blue-600' : 'text-gray-900'}`}>
-                          Day {dp.day} {isCompensation ? '(调整)' : ''} · {dp.city}
-                        </div>
-                        {isCompensation && (
-                          <span className="text-[8px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">补偿机制触发</span>
-                        )}
-                      </div>
-                      <div className="space-y-4">
-                        {(['morning', 'noon', 'evening'] as const).map(slot => {
-                          const block = dp[slot];
-                          if (!block?.title) return null;
-                          const bg = isCompensation ? 'bg-blue-50 border-blue-100' : 'bg-green-50 border-green-100';
-                          const bar = isCompensation ? 'bg-blue-500' : 'bg-green-500';
-                          const timeColor = isCompensation ? 'text-blue-600' : 'text-green-600';
-                          return (
-                            <div key={slot} className={`p-5 ${bg} rounded-2xl border flex items-center gap-4 relative`}>
-                              <div className={`text-[10px] font-black w-12 ${timeColor}`}>{block.time}</div>
-                              <div className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                <span>{iconFor(block.kind, block.is_indoor)}</span> {block.title}
-                              </div>
-                              <div className={`absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 ${bar} rounded-full`}></div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-          
-          <div className="col-span-4 space-y-8">
-            <section className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-              <h3 className="text-base font-bold mb-8 text-gray-800 flex items-center gap-2">
-                <span className="w-1 h-4 bg-orange-500 rounded-full"></span> 调整总结
-              </h3>
-              <div className="space-y-8">
+              <div className="space-y-4">
                 <div>
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    谁受影响最大 ℹ️
-                  </div>
-                  <div className="flex gap-3 flex-wrap">
-                    {replanDiff.most_affected.map((s: string) => (
-                      <div key={s} className={`px-4 py-2 rounded-2xl font-black text-sm flex items-center gap-2 shadow-sm ${
-                        s.includes('-') ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-gray-50 text-gray-400 border border-gray-100'
-                      }`}>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${s.includes('-') ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'}`}>{s.split(':')[0]}</div>
-                        {s.split(':')[1]}
-                      </div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">事件类型</label>
+                  <select 
+                    value={selectedType}
+                    onChange={e => {
+                      setSelectedType(e.target.value);
+                      setEventParams({});
+                    }}
+                    className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-sm outline-none"
+                  >
+                    <option value="">请选择事件...</option>
+                    {Object.entries(eventTypes).map(([k, v]: [string, any]) => (
+                      <option key={k} value={k}>{v.label}</option>
                     ))}
-                  </div>
+                  </select>
                 </div>
-                
-                <div>
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    谁得到补偿 ℹ️
+
+                {selectedType && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">发生日期 (Day)</label>
+                    <input 
+                      type="number"
+                      min={1}
+                      max={tripData?.days || 30}
+                      value={occursOnDay}
+                      onChange={e => setOccursOnDay(parseInt(e.target.value))}
+                      className="w-full p-2 bg-gray-50 border border-gray-100 rounded-lg text-sm outline-none"
+                    />
+                    {occursOnDay < todayInfo?.today_index && (
+                      <p className="text-[10px] text-orange-500 mt-1">⚠️ 补录历史事件，重排将从 Day {todayInfo.today_index} 开始</p>
+                    )}
                   </div>
-                  <div className="flex gap-3 flex-wrap">
-                    {replanDiff.compensated.map((s: string) => (
-                      <div key={s} className={`px-4 py-2 rounded-2xl font-black text-sm flex items-center gap-2 shadow-sm ${
-                        s.includes('+') ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-gray-50 text-gray-400 border border-gray-100'
-                      }`}>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${s.includes('+') ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}`}>{s.split(':')[0]}</div>
-                        {s.split(':')[1]}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                )}
+
+                {renderEventForm()}
+
+                <button
+                  onClick={handleTrigger}
+                  disabled={triggering || !selectedType}
+                  className="w-full mt-4 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 disabled:bg-gray-200 transition-all"
+                >
+                  {triggering ? 'Agent 正在重排...' : '⚡ 注入事件并重排'}
+                </button>
               </div>
             </section>
-            
-            <section className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-              <h3 className="text-base font-bold mb-6 text-gray-800 flex items-center gap-2">
-                <span className="w-1 h-4 bg-blue-600 rounded-full"></span> 系统如何调整
+
+            <section className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+              <h3 className="text-sm font-bold mb-4 text-gray-800 flex items-center gap-2">
+                <span className="w-1 h-3 bg-gray-400 rounded-full"></span> 事件历史
               </h3>
-              <ul className="space-y-4">
-                {replanDiff.how_adjusted.map((t: string) => (
-                  <li key={t} className="text-xs text-gray-600 font-medium flex items-start gap-3 leading-relaxed">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 shrink-0"></span> {t}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-8 pt-8 border-t border-gray-50 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase">新评分概览 ℹ️</span>
-                  <span className="text-2xl font-black text-blue-600">
-                    {newScore ?? '—'}<span className="text-xs font-normal text-gray-300 ml-1">/100</span>
-                  </span>
+              <div className="space-y-3">
+                {events.length > 0 ? events.map((e: any) => (
+                  <div key={e.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100 relative">
+                    <div className="text-[10px] font-black text-blue-600 mb-1">Day {e.occurs_on_day}</div>
+                    <div className="text-xs font-bold text-gray-700">{e.title}</div>
+                    <div className="text-[8px] text-gray-400 mt-1">{new Date(e.created_at).toLocaleString()}</div>
+                  </div>
+                )) : (
+                  <p className="text-xs text-gray-400 text-center py-4">暂无事件记录</p>
+                )}
+              </div>
+              {events.length > 0 && (
+                <button 
+                  onClick={handleReplay}
+                  disabled={replaying}
+                  className="w-full mt-6 text-[10px] font-bold text-red-500 hover:underline"
+                >
+                  {replaying ? '正在重置...' : '↺ 重置回原始方案 (Baseline)'}
+                </button>
+              )}
+            </section>
+          </div>
+
+          {/* Right: Proposal View */}
+          <div className="col-span-8 space-y-8">
+            {replanDiff ? (
+              <div className="bg-orange-50 border border-orange-100 p-6 rounded-3xl mb-6 shadow-sm">
+                <div className="text-sm font-black text-orange-700 mb-2">最新调整：{replanDiff.event_summary}</div>
+                <div className="text-xs text-orange-600 opacity-80">
+                  影响范围：{replanDiff.impact_range} · 扰动程度：{replanDiff.disturbance}
                 </div>
-                {(() => {
-                  const s = tripData?.scores;
-                  const os = replanDiff?.old_score;
-                  const rows = [
-                    { label: '整体满意度 S_avg', val: s?.S_avg, old: os?.S_avg },
-                    { label: '最低满意度 S_min', val: s?.S_min, old: os?.S_min },
-                    { label: '行程可行性 F', val: s?.F, old: os?.F },
-                    { label: '公平性 Fairness', val: s?.Fairness, old: os?.Fairness }
-                  ];
-                  return (
-                    <div className="space-y-2">
-                      {rows.map(item => {
-                        const inc = (item.val ?? 0) - (item.old ?? 0);
+                <ul className="mt-4 space-y-1">
+                  {replanDiff.how_adjusted.map((t: string, i: number) => (
+                    <li key={i} className="text-[10px] text-orange-800 flex items-center gap-2">
+                      <span className="w-1 h-1 bg-orange-400 rounded-full"></span> {t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <div className="space-y-6">
+              {tripData?.proposal?.per_day.map((day: any) => {
+                const isFrozen = day.day <= frozenUntil;
+                return (
+                  <div 
+                    key={day.day} 
+                    className={`bg-white p-6 rounded-3xl border shadow-sm transition-all ${
+                      isFrozen ? 'opacity-60 border-gray-100' : 'border-blue-200 ring-2 ring-blue-50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center mb-6">
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black ${
+                          isFrozen ? 'bg-gray-100 text-gray-400' : 'bg-blue-600 text-white'
+                        }`}>
+                          DAY {day.day}
+                        </span>
+                        <h3 className="font-black text-gray-800">{day.city} · {day.theme}</h3>
+                      </div>
+                      {isFrozen && <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">已锁定</span>}
+                    </div>
+                    
+                    <div className="grid grid-cols-5 gap-3">
+                      {(['morning', 'lunch', 'afternoon', 'dinner', 'night'] as const).map(slot => {
+                        const block = day[slot];
+                        if (!block?.title) return null;
                         return (
-                          <div key={item.label} className="flex justify-between items-center">
-                            <span className="text-[10px] text-gray-500 font-bold">{item.label}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black text-gray-700">{item.val ?? '—'}</span>
-                              {item.old !== undefined && (
-                                <span className={`text-[8px] font-black flex items-center ${inc >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                  {inc >= 0 ? '↑' : '↓'} {Math.abs(inc)}
-                                </span>
-                              )}
+                          <div key={slot} className="p-3 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col gap-2">
+                            <div className="text-[8px] font-black text-gray-400">{block.time}</div>
+                            <div className="text-[10px] font-bold text-gray-700 leading-tight">
+                              {iconFor(block.kind, block.is_indoor)} {block.title}
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                  );
-                })()}
-                {oldScore !== undefined && newScore !== undefined && oldScore !== newScore && (
-                  <div className="text-[10px] text-gray-400 text-right pt-2">
-                    原评分 {oldScore} → {newScore}
                   </div>
-                )}
-              </div>
-            </section>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        
-        <div className="mt-12 flex justify-center gap-6">
-          <button className="px-10 py-4 border-2 border-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-50 transition-all">
-            👤 人工确认
-          </button>
-          <button className="bg-blue-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2">
-            <span>✅</span> 接受调整
-          </button>
         </div>
       </div>
     </div>

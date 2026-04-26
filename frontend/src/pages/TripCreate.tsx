@@ -93,10 +93,11 @@ const TripCreate: React.FC = () => {
   const { setTripId, setTripData, selectedMemberIds, setSelectedMemberIds } = useTrip();
   
   const [formData, setFormData] = useState({
-    title: '国内多城深度游',
+    title: '杭州深度游',
+    start_date: new Date().toISOString().split('T')[0],
     days: 7,
     budget_total: 30000,
-    cities: '北京, 上海, 杭州'
+    cities: '杭州'
   });
   
   const [availableProfiles, setAvailableProfiles] = useState<any[]>([]);
@@ -151,6 +152,16 @@ const TripCreate: React.FC = () => {
               onChange={e => setFormData({...formData, title: e.target.value})}
               className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
               placeholder="例如：国内多城深度游" 
+            />
+          </div>
+          
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">起始日期 *</label>
+            <input 
+              type="date" 
+              value={formData.start_date}
+              onChange={e => setFormData({...formData, start_date: e.target.value})}
+              className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
             />
           </div>
           
