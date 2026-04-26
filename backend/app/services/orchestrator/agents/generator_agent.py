@@ -94,6 +94,63 @@ def _restaurant_count(pool: dict, city: str) -> int:
 
 MAX_SUPPLEMENT_ROUNDS = 2
 
+def _pick_alt(slot, city, pool, used, exclude_kw=()):
+    pois = (pool.get(city) or []) if isinstance(pool, dict) else []
+    target_food = slot in ("lunch", "dinner")
+    for p in pois:
+        if p.get("poi_id") in used: continue
+        cat = p.get("category") or ""
+        is_food = "美食" in cat
+        if target_food and not is_food: continue
+        if not target_food and is_food and slot != "night": continue
+        if any(kw in cat for kw in exclude_kw): continue
+        return p
+    return None
+
+
+def _post_validate_proposal(proposal, poi_pool, trace):
+    used = set()
+    NIGHT_BLOCK = ("公园", "风景", "广场", "山岳", "自然", "湖泊")
+    # Proposal structure uses 'per_day' list in V2, but the prompt example showed 'itinerary'. 
+    # Let's check the actual response structure from the trace or mock.
+    # Based on line 193: len(state['proposal']['per_day'])
+    days = proposal.get("per_day") or proposal.get("itinerary") or []
+    for day in days:
+        for slot in ("morning", "lunch", "afternoon", "dinner", "night"):
+            block = day.get(slot)
+            if not block: continue
+            pid = block.get("poi_id")
+            city = day.get("city")
+            
+            # 1. Cross-day dedup
+            if pid in used:
+                rep = _pick_alt(slot, city, poi_pool, used,
+                                exclude_kw=NIGHT_BLOCK if slot == "night" else ())
+                if rep:
+                    block.update({
+                        "poi_id": rep["poi_id"],
+                        "title": rep["name"],
+                        "selection_rationale": f"[自动去重替换] {block.get('selection_rationale', '')}"
+                    })
+                    pid = rep["poi_id"]
+                    trace.append(f"[generator-fix] Day {day.get('day')} {slot} 重复 POI 替换为 {rep.get('name')}")
+            
+            # 2. Night slot constraint (no day-time scenic spots)
+            if slot == "night" and any(kw in (block.get("category") or "") for kw in NIGHT_BLOCK):
+                rep = _pick_alt("night", city, poi_pool, used, exclude_kw=NIGHT_BLOCK)
+                if rep:
+                    block.update({
+                        "poi_id": rep["poi_id"],
+                        "title": rep["name"],
+                        "selection_rationale": f"[时段语义纠偏] {block.get('selection_rationale', '')}"
+                    })
+                    pid = rep["poi_id"]
+                    trace.append(f"[generator-fix] Day {day.get('day')} night 景点类替换为 {rep.get('name')}")
+            
+            if pid: used.add(pid)
+    return proposal
+
+
 def run(state: TripState) -> TripState:
     trace = state.get("agent_trace", []) or []
     started = time.time()
@@ -128,8 +185,8 @@ def run(state: TripState) -> TripState:
             trace.append(f"[generator] POI 部分失败({len(poi_failures)} 项): {poi_failures[:3]}...")
         
         # Reflection loop for food POIs
-        days = state.get("days", 7)
-        needed = days * 2 # Lunch + Dinner
+        days_count = state.get("days", 7)
+        needed = days_count * 2 # Lunch + Dinner
         from .supplement_keyword_agent import run as supplement_run
         
         for city in cities:
@@ -182,7 +239,9 @@ def run(state: TripState) -> TripState:
         mock_file="proposal_llm_mock.json",
     )
 
-    state["proposal"] = response["proposal"]
+    state["proposal"] = _post_validate_proposal(
+        response["proposal"], poi_pool, trace
+    )
     
     # V2: Post-generation quantification (Layer A)
     # This will be called again in evaluator_agent, but we can do a quick check here for self-correction if needed

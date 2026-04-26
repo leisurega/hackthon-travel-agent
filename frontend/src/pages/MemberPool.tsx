@@ -66,7 +66,9 @@ const MemberPool: React.FC = () => {
       anti_preferences: {},
       negotiable_range: {},
       scoring_weights: { T: 0.15, B: 0.15, P: 0.2, I: 0.25, F: 0.15, S: 0.1 },
-      compensation_preference: []
+      compensation_preference: [
+        { trigger: '核心偏好未满足', action: '次日在该维度安排独立补偿时段', pref_key: '' }
+      ]
     };
     try {
       await profileApi.create(newProfile);
@@ -308,8 +310,25 @@ const MemberPool: React.FC = () => {
                   <label className="text-[10px] text-gray-400 uppercase">独处时间偏好 (0-1)</label>
                   <input 
                     type="range" min="0" max="100" step="10"
-                    value={(activeProfile.strong_preferences?.solo_time || 0) * 100}
-                    onChange={e => updateNested('strong_preferences.solo_time', parseInt(e.target.value) / 100)}
+                    value={((activeProfile.negotiable_range?.solo_time ?? activeProfile.strong_preferences?.solo_time ?? 0) as number) * 100}
+                    onChange={e => {
+                      const v = parseInt(e.target.value) / 100;
+                      const newProfile = { ...activeProfile };
+                      
+                      // 1. Ensure negotiable_range exists and set solo_time
+                      newProfile.negotiable_range = { 
+                        ...(newProfile.negotiable_range || {}), 
+                        solo_time: v 
+                      };
+                      
+                      // 2. Remove from strong_preferences if it exists there (migration)
+                      if (newProfile.strong_preferences && 'solo_time' in newProfile.strong_preferences) {
+                        const { solo_time: _, ...rest } = newProfile.strong_preferences;
+                        newProfile.strong_preferences = rest;
+                      }
+                      
+                      setActiveProfile(newProfile);
+                    }}
                     className="w-full h-1.5 bg-gray-100 rounded-full appearance-none cursor-pointer accent-yellow-600"
                   />
                 </div>
@@ -323,7 +342,9 @@ const MemberPool: React.FC = () => {
                 兴趣覆盖 (0.0 - 1.0)
               </h3>
               <div className="grid grid-cols-2 gap-x-10 gap-y-4">
-                {Object.entries(activeProfile.strong_preferences).map(([key, val]: [string, any]) => {
+                {Object.entries(activeProfile.strong_preferences)
+                  .filter(([key]) => key !== 'solo_time')
+                  .map(([key, val]: [string, any]) => {
                   const labelMap: Record<string, string> = {
                     'photography': '摄影',
                     'museum': '博物馆',

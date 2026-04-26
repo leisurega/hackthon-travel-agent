@@ -33,6 +33,14 @@ def _migrate_old_profile(old: Dict) -> UserProfile:
     old_neg = old.get("negotiable_range", [])
     new_neg = {f"item_{i}": item for i, item in enumerate(old_neg)}
 
+    goals = old.get("trip_goal") or []
+    if old.get("core_story"):
+        core_story = old["core_story"]
+    elif goals:
+        core_story = "旅行倾向：" + "、".join(str(g) for g in goals)
+    else:
+        core_story = "旅行偏好待补充"
+
     # 5. Build new profile
     new_profile: UserProfile = {
         "user_id": old.get("user_id"),
@@ -40,7 +48,7 @@ def _migrate_old_profile(old: Dict) -> UserProfile:
         "role": old.get("role", "成员"),
         "role_tag": old.get("key_tags", [""])[0] if old.get("key_tags") else "普通成员",
         "protection_level": "high" if new_hard["walk_km_max"] <= 5.0 else "medium",
-        "core_story": f"基于旧画像迁移。目标: {', '.join(old.get('trip_goal', []))}",
+        "core_story": core_story,
         "hard_constraints": new_hard,
         "strong_preferences": new_strong,
         "anti_preferences": new_anti,

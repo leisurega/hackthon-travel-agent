@@ -55,7 +55,7 @@ class UserProfile(TypedDict):
     hard_constraints: dict     # {budget_max: 5000, walk_km_max: 6.0, dietary: [], ...}
     strong_preferences: dict   # {photography: 1.0, museum: 0.8, ...} (0-1 range)
     anti_preferences: dict     # {crowds: 1.0, coriander: 1.0, ...} (0-1 range)
-    negotiable_range: dict     # {museum_hours: [0, 2], ...}
+    negotiable_range: dict     # {museum_hours: [0, 2], solo_time: 0.5, accept_split_action: true, ...}
     
     scoring_weights: dict      # {T: 0.15, B: 0.15, P: 0.20, I: 0.25, F: 0.15, S: 0.10}
     compensation_preference: List[CompensationPreference]

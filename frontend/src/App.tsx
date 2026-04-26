@@ -15,7 +15,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { path: '/', label: '旅行任务', icon: '📋' },
     { path: '/members', label: '成员池', icon: '🗂️' },
     { path: '/conflicts', label: '冲突分析', icon: '⚠️' },
-    { path: '/proposal', label: '方案对比', icon: '📊' },
+    { path: '/proposal', label: '推荐方案', icon: '📊' },
     { path: '/replan', label: '动态重排', icon: '🔄' },
   ];
 

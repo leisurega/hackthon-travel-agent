@@ -133,7 +133,7 @@ const ProposalDetail: React.FC = () => {
         <div className="flex justify-between items-end mb-10">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">方案详情 (V2)</h1>
+              <h1 className="text-3xl font-bold text-gray-900">推荐方案 (V2)</h1>
               {adoptedAt && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
                   ✓ 已采纳 · {new Date(adoptedAt).toLocaleString()}

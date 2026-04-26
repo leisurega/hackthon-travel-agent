@@ -219,8 +219,8 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
           "poi_id": "poi_456"
         },
         "afternoon": {
-          "start_time": "14:00",
-          "end_time": "17:30",
+          "start_time": "14:30",
+          "end_time": "16:30",
           "title": "景点名称",
           "kind": "walk",
           "tags": ["拍照"],
@@ -229,8 +229,8 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
           "poi_id": "poi_789"
         },
         "dinner": {
-          "start_time": "18:00",
-          "end_time": "19:30",
+          "start_time": "17:00",
+          "end_time": "18:30",
           "title": "餐厅名称",
           "kind": "restaurant",
           "tags": ["特色小吃"],
@@ -258,9 +258,12 @@ SYS_GENERATOR = """你是「多人旅行协同 Agent」里的 Itinerary Generato
 - 每个 ActivityBlock 必须包含 start_time 和 end_time (HH:MM 格式)。
 - 每个 ActivityBlock 必须包含 selection_rationale，解释为什么选这个 POI（满足了谁、避开了谁、权衡了什么）。
 - end_time = start_time + POI.duration_min，且必须 ≤ POI.open_time.end - 30min。
-- lunch 和 dinner 必须从 POI 池中 category=='美食' 的项里选。
-- morning 不能用美食类（早餐用户自理）。
-- 全程 N 天的所有 lunch.poi_id ∪ dinner.poi_id 共 2N 个 POI ID 必须互不重复。
+- **时段衔接（硬性）**：在遵守上一条的前提下，相邻槽位 lunch→afternoon、afternoon→dinner、dinner→night 的空档（下一段 start_time 减上一段 end_time）均不得超过 120 分钟。若某 POI 的 duration_min 过短会导致下午过早结束，必须优先改选 duration_min 更大且仍在池内、营业窗口允许的 POI，或推迟 afternoon 的 start_time、或提前 dinner 的 start_time，直至空档 ≤120 分钟。
+- 全程所有天的 morning + lunch + afternoon + dinner + night 共 5N 个槽位的 poi_id 必须互不重复。如池中候选不足，宁可在 night 留空（写 null）也不要复用同一 POI。
+- 槽位语义（硬约束）：
+  - night（start_time >= 17:00）禁止使用 category 包含「公园 / 风景 / 广场 / 山岳 / 自然 / 湖泊」的 POI，即使开放时间允许；必须改用美食 / 夜市 / 演出 / 酒吧 / 街区 / 商圈 / 文创园 类。
+  - dinner 仍要求 category=美食。
+  - morning/afternoon 优先选景点/公园/博物馆类。
 - **每个 ActivityBlock 的 title / poi_id 必须来自 POI 候选池，严禁创造池外 POI**。
 - daily_walk_km 字段由系统计算，你不要在 JSON 中输出它，也不要自行估算。
 - beneficiaries 必须是 user_id 的子集。

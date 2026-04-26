@@ -26,7 +26,9 @@
         "高密度行程": 1
       },
       "negotiable_range": {
-        "item_0": "可接受 0-2 小时博物馆"
+        "item_0": "可接受 0-2 小时博物馆",
+        "solo_time": 0.6,
+        "accept_split_action": true
       },
       "scoring_weights": {
         "T": 0.15,
@@ -36,7 +38,13 @@
         "F": 0.15,
         "S": 0.1
       },
-      "compensation_preference": []
+      "compensation_preference": [
+        {
+          "trigger": "摄影高光时段未满足",
+          "action": "次日增加 1.5h 独立摄影时段",
+          "pref_key": "photography"
+        }
+      ]
     },
     {
       "user_id": "B",
@@ -70,7 +78,13 @@
         "F": 0.15,
         "S": 0.1
       },
-      "compensation_preference": []
+      "compensation_preference": [
+        {
+          "trigger": "深度文化体验时间被压缩",
+          "action": "补偿一次博物馆或历史建筑深度讲解",
+          "pref_key": "museum"
+        }
+      ]
     },
     {
       "user_id": "C",
@@ -106,7 +120,13 @@
         "F": 0.15,
         "S": 0.1
       },
-      "compensation_preference": []
+      "compensation_preference": [
+        {
+          "trigger": "步行强度过大或未安排午休",
+          "action": "次日半天休息或增加自由放松时段",
+          "pref_key": "free_time"
+        }
+      ]
     }
   ]
 }

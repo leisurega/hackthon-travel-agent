@@ -22,10 +22,27 @@ const Conflicts: React.FC = () => {
     return out;
   };
 
+  const statusMap: Record<string, { label: string; color: string }> = {
+    'Pass': { label: '通过', color: 'green' },
+    'Conditional': { label: '有条件通过', color: 'orange' },
+    'Reject': { label: '不可行', color: 'red' }
+  };
+  const currentStatus = statusMap[tripData?.conflicts_v2?.feasibility_status || 'Pass'] || { label: '未知', color: 'gray' };
+
+  const hardConflicts = (tripData?.conflicts || []).filter((c: any) => c.is_hard || c.severity === '高');
+
   const stats = [
     { label: '总冲突数', value: tripData?.conflict_summary?.total || 0, color: 'blue' },
-    { label: '硬冲突', value: tripData?.conflict_summary?.hard || 0, color: 'red' },
-    { label: '状态', value: tripData?.conflicts_v2?.feasibility_status || 'Pass', color: 'orange' },
+    { 
+      label: '硬冲突', 
+      value: tripData?.conflict_summary?.hard || 0, 
+      color: 'red',
+      details: hardConflicts.map((c: any) => ({
+        type: c.type,
+        title: replaceUserIds(c.title)
+      }))
+    },
+    { label: '状态', value: currentStatus.label, color: currentStatus.color },
     { label: '系统压力', value: '6维矩阵', color: 'green' }
   ];
 
@@ -60,12 +77,29 @@ const Conflicts: React.FC = () => {
         
         <div className="grid grid-cols-4 gap-6 mb-10">
           {stats.map(stat => (
-            <div key={stat.label} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div key={stat.label} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group">
               <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                 <div className={`w-2 h-2 rounded-full bg-${stat.color}-500`}></div>
                 {stat.label}
               </div>
               <div className={`text-3xl font-black text-gray-800`}>{stat.value}</div>
+              
+              {stat.details && stat.details.length > 0 && (
+                <div className="absolute top-full left-0 mt-2 w-64 bg-white p-4 rounded-xl border border-gray-100 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  <h5 className="text-[10px] font-bold text-gray-400 uppercase mb-3">硬冲突摘要</h5>
+                  <div className="space-y-2">
+                    {stat.details.slice(0, 5).map((d: any, idx: number) => (
+                      <div key={idx} className="flex gap-2 text-[10px] leading-tight text-gray-600">
+                        <span className="shrink-0">⚠️</span>
+                        <span>{d.title}</span>
+                      </div>
+                    ))}
+                    {stat.details.length > 5 && (
+                      <div className="text-[10px] text-gray-400 italic">... 还有 {stat.details.length - 5} 条</div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -75,15 +109,22 @@ const Conflicts: React.FC = () => {
             <h3 className="text-base font-bold mb-8 text-gray-800 flex items-center justify-between">
               冲突热力矩阵 ℹ️
               <div className="flex gap-3 text-[10px] font-bold uppercase tracking-tighter">
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-400"></span>低</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-400"></span>中</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400"></span>高</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-100 border border-slate-200"></span>无</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-200"></span>低</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400"></span>中</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-600"></span>高</span>
               </div>
             </h3>
             <div className="aspect-square">
               <HeatmapChart data={heatmapData} xAxis={xAxis} yAxis={yAxis} />
             </div>
-            <p className="text-[10px] text-gray-400 mt-6 text-center">颜色越深，冲突程度越高</p>
+            <div className="mt-6 space-y-2">
+              <p className="text-[10px] text-gray-500 leading-relaxed">
+                <b>行</b>：六维画像张力；<b>列</b>：当前成员；<b>格子</b>：该成员在该维度的相对冲突压力。
+              </p>
+              <p className="text-[10px] text-gray-400">色阶越深，冲突越强。悬浮显示「成员：档位」，数字为 0–3（与图例对应）。</p>
+              <p className="text-[10px] text-gray-400 font-medium">档位与右侧冲突卡严重度同源（深红=硬需求 / 中红=强软 / 浅红=弱软 / 近白=无）。</p>
+            </div>
           </section>
           
           <section className="col-span-7 space-y-4">
@@ -143,7 +184,7 @@ const Conflicts: React.FC = () => {
             to="/proposal"
             className="bg-blue-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            查看方案详情 →
+            查看推荐方案 →
           </Link>
         </div>
       </div>

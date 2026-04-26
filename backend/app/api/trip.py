@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 
 from app.services.profile_store import bulk_get_profiles
 from app.services.orchestrator.graph import run_full
+from app.services.orchestrator.agents.conflict_agent import rebuild_heatmap
 from ..services.orchestrator.state import TripState, EventItem, ProposalSnapshot
 from ..services.trip_store import save_trip, load_trip, delete_trip, list_trips
 from ..services.orchestrator.event_registry import get_event_types_schema, format_event_title
@@ -143,6 +144,23 @@ def get_trip(trip_id: str):
     state = load_trip(trip_id)
     if state is None:
         raise HTTPException(status_code=404, detail=f"trip {trip_id} not found")
+    
+    # Lazy migration: Re-calculate heatmap and summary for old trips
+    v2 = state.get("conflicts_v2") or {}
+    if v2.get("dimension_conflicts"):
+        new_hm, hits, total = rebuild_heatmap(
+            state.get("profiles", []), v2
+        )
+        state["heatmap"] = new_hm
+        
+        # Sync conflict summary (ensure hard count matches反推 results)
+        if state.get("conflict_summary"):
+            conflicts_list = v2.get("dimension_conflicts") or []
+            hard = sum(1 for c in conflicts_list if c.get("tier") == "硬需求")
+            state["conflict_summary"]["hard"] = hard
+            state["conflict_summary"]["high_priority"] = hard
+            state["conflict_summary"]["total"] = len(conflicts_list)
+            
     return state
 
 
